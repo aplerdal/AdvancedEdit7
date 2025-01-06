@@ -52,7 +52,7 @@ public class AdvancedEdit : Game
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
         _uiManager.AddWindow(new MapEditor(new Track(
-            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 25, 0x0000, 0x283d04)));
+            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29044c)));
 
         // TODO: use this.Content to load your game content here
         base.LoadContent();

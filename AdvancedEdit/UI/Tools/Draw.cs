@@ -54,9 +54,9 @@ public class Draw : MapEditorTool
             hoveredTile = new SVector2((int)hoveredTile.X, (int)hoveredTile.Y);
             SVector2 absoluteHoveredTile = editor.CursorPosition + hoveredTile * (8 * editor.Scale);
 
-            if (ActiveTile is not null)
+            if (editor.ActiveTile is not null)
             {
-                byte tile = ActiveTile.Value;
+                byte tile = editor.ActiveTile.Value;
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 {
                     if (!_held) _drawAction = new DrawAction(editor.Track);

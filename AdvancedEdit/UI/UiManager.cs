@@ -20,6 +20,14 @@ public class UiManager
             ImGui.Begin($"{window.Name}##{window.Id}", ref window.IsOpen, window.Flags);
             window.Draw(true);
             ImGui.End();
+
+
+            if (window is IInspector inspector)
+            {
+                ImGui.Begin("Inspector");
+                inspector.DrawInspector();   
+                ImGui.End();
+            }
         }
         // if window is focused draw inspector and call update
     }
