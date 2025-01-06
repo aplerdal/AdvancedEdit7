@@ -1,5 +1,9 @@
 ﻿using System;
+using System.IO;
+using AdvancedEdit.Serialization.Types;
 using AdvancedEdit.UI;
+using AdvancedEdit.UI.Undo;
+using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -9,31 +13,34 @@ namespace AdvancedEdit;
 
 public class AdvancedEdit : Game
 {
+    public static AdvancedEdit Instance { get; private set; }
     /// <summary>
     /// Program Version (Following the semver versioning system)
     /// </summary>
     public const string Version = "0.1.0"; 
     
-    private GraphicsDeviceManager _graphics;
-    private SpriteBatch _spriteBatch;
+    public GraphicsDeviceManager Graphics;
+    public SpriteBatch SpriteBatch;
 
-    private ImGuiRenderer _imGuiRenderer;
+    public ImGuiRenderer ImGuiRenderer;
     
     private UiManager _uiManager;
 
     public AdvancedEdit()
     {
-        _graphics = new GraphicsDeviceManager(this);
+        Instance = this;
+        Graphics = new GraphicsDeviceManager(this);
         
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
+        Window.AllowUserResizing = true;
     }
 
     protected override void Initialize()
     {
         // TODO: Add your initialization logic here
-        _imGuiRenderer = new ImGuiRenderer(this);
-        _imGuiRenderer.RebuildFontAtlas();
+        ImGuiRenderer = new ImGuiRenderer(this);
+        ImGuiRenderer.RebuildFontAtlas();
         _uiManager = new UiManager();
         
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
@@ -43,7 +50,9 @@ public class AdvancedEdit : Game
 
     protected override void LoadContent()
     {
-        _spriteBatch = new SpriteBatch(GraphicsDevice);
+        SpriteBatch = new SpriteBatch(GraphicsDevice);
+        _uiManager.AddWindow(new MapEditor(new Track(
+            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 25, 0x0000, 0x283d04)));
 
         // TODO: use this.Content to load your game content here
         base.LoadContent();
@@ -63,12 +72,12 @@ public class AdvancedEdit : Game
     protected override void Draw(GameTime gameTime)
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
-        _imGuiRenderer.BeforeLayout(gameTime);
+        ImGuiRenderer.BeforeLayout(gameTime);
         // TODO: Add your drawing code here
 
-        _uiManager.DrawWindows(this);
+        _uiManager.DrawWindows();
         
-        _imGuiRenderer.AfterLayout();
+        ImGuiRenderer.AfterLayout();
         
         base.Draw(gameTime);
     }

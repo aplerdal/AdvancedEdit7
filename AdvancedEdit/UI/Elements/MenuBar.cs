@@ -6,7 +6,7 @@ public static class MenuBar
 {
     private static bool _debug;
 
-    public static void Draw(AdvancedEdit ae)
+    public static void Draw()
     {
         if (_debug) ImGui.ShowMetricsWindow();
         if (ImGui.BeginMainMenuBar())
@@ -22,7 +22,7 @@ public static class MenuBar
                 ImGui.MenuItem("Open Project", "ctrl+shift+o");
                 ImGui.MenuItem("Save Project", "ctrl+shift+s");
                 ImGui.Separator();
-                if (ImGui.MenuItem("Exit", "alt+f4")) ae.Exit();
+                if (ImGui.MenuItem("Exit", "alt+f4")) AdvancedEdit.Instance.Exit();
 
                 ImGui.EndMenu();
             }

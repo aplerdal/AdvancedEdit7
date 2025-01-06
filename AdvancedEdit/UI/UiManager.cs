@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using AdvancedEdit.UI.Elements;
 using ImGuiNET;
 
@@ -9,15 +10,15 @@ public class UiManager
     private int _windowId = 0;
     LinkedList<UiWindow> _windows = new();
 
-    public void DrawWindows(AdvancedEdit ae)
+    public void DrawWindows()
     {
         ImGui.DockSpaceOverViewport();
-        MenuBar.Draw(ae);
-        foreach (var window in _windows)
+        MenuBar.Draw();
+        foreach (var window in _windows.ToArray())
         {
             if (!window.IsOpen) _windows.Remove(window);
-            ImGui.Begin($"{window.Name}##{window.Id}", ref window.IsOpen, ImGuiWindowFlags.None);
-            window.Draw(ae);
+            ImGui.Begin($"{window.Name}##{window.Id}", ref window.IsOpen, window.Flags);
+            window.Draw(true);
             ImGui.End();
         }
         // if window is focused draw inspector and call update
