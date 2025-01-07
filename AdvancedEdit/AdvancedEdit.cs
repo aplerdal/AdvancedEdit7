@@ -15,7 +15,7 @@ public class AdvancedEdit : Game
 {
     public static AdvancedEdit Instance { get; private set; }
     /// <summary>
-    /// Program Version (Following the semver versioning system)
+    /// Program Version
     /// </summary>
     public const string Version = "0.1.0"; 
     

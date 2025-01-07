@@ -11,13 +11,33 @@ public abstract class TilemapWindow(Track track) : UiWindow
     //TODO: Maybe make if the image is hovered a bool or something? Lots of tools call it and that could cause issues if anything else is drawn for some reason
     
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-    
+    /// <summary>
+    /// The current active track
+    /// </summary>
     public Track Track = track;
+    /// <summary>
+    /// The window position
+    /// </summary>
     public Vector2 WindowPosition;
+    /// <summary>
+    /// The size of the current window
+    /// </summary>
     public Vector2 WindowSize;
+    /// <summary>
+    /// The absolute position of the map image
+    /// </summary>
     public Vector2 CursorPosition;
+    /// <summary>
+    /// The size of the map image
+    /// </summary>
     public Vector2 MapSize;
+    /// <summary>
+    /// The relative position of the map
+    /// </summary>
     public Vector2 Translation;
+    /// <summary>
+    /// The scale of the map
+    /// </summary>
     public float Scale = 1.0f;
     
     protected View View = new();

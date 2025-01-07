@@ -10,11 +10,20 @@ public abstract class Tool
 
 public abstract class MapTool
 {
+    /// <summary>
+    /// Update and draw the tool
+    /// </summary>
+    /// <param name="window">The window the tool belongs to</param>
     public abstract void Update(TilemapWindow window);
 }
 
 public abstract class MapEditorTool : MapTool
 {
+    /// <summary>
+    /// Update and draw the tool
+    /// </summary>
+    /// <param name="window">The window the tool belongs to</param>
+    /// <exception cref="InvalidOperationException"></exception>
     public override void Update(TilemapWindow window)
     {
         // Ensure the passed TilemapWindow is a MapEditor

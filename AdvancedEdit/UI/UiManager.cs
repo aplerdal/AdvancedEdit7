@@ -10,6 +10,9 @@ public class UiManager
     private int _windowId = 0;
     LinkedList<UiWindow> _windows = new();
 
+    /// <summary>
+    /// Render and handle input for all windows from the current window list;
+    /// </summary>
     public void DrawWindows()
     {
         ImGui.DockSpaceOverViewport();
@@ -32,6 +35,10 @@ public class UiManager
         // if window is focused draw inspector and call update
     }
 
+    /// <summary>
+    /// Add window to current context
+    /// </summary>
+    /// <param name="window">Window to be added</param>
     public void AddWindow(UiWindow window)
     {
         window.Id = _windowId++;

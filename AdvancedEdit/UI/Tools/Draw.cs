@@ -38,8 +38,6 @@ public class DrawAction : IUndoable
 
 public class Draw : MapEditorTool
 {
-    public byte? ActiveTile = 0;
-
     private bool _held = false;
     private DrawAction _drawAction;
     

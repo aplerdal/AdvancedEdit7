@@ -1,6 +1,7 @@
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework.Input;
+using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Tools;
 
@@ -26,7 +27,7 @@ public class View : MapTool
             }
             
             var wheel = (Mouse.GetState().ScrollWheelValue / 360f) - _lastScrollValue;
-            _lastScrollValue = (Mouse.GetState().ScrollWheelValue / 360f);
+            _lastScrollValue = Mouse.GetState().ScrollWheelValue / 360f;
             if (wheel != 0)
             {
                 Vector2 relativeMousePosition = mousePos - window.CursorPosition;

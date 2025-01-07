@@ -5,7 +5,9 @@ namespace AdvancedEdit.UI.Elements;
 public static class MenuBar
 {
     private static bool _debug;
-
+    /// <summary>
+    /// Render the menu bar
+    /// </summary>
     public static void Draw()
     {
         if (_debug) ImGui.ShowMetricsWindow();
