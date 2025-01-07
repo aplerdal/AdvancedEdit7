@@ -1,4 +1,3 @@
-using System.Numerics;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework.Input;

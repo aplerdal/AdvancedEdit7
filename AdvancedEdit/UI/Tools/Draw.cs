@@ -5,8 +5,6 @@ using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 
-using SVector2 = System.Numerics.Vector2;
-
 namespace AdvancedEdit.UI.Tools;
 
 public class DrawAction : IUndoable
@@ -47,12 +45,12 @@ public class Draw : MapEditorTool
     
     public override void Update(MapEditor editor)
     {
-        SVector2 mousePosition = ImGui.GetMousePos();
+        Vector2 mousePosition = ImGui.GetMousePos();
         if (ImGui.IsItemHovered())
         {
-            SVector2 hoveredTile = (mousePosition - editor.CursorPosition) / (8 * editor.Scale);
-            hoveredTile = new SVector2((int)hoveredTile.X, (int)hoveredTile.Y);
-            SVector2 absoluteHoveredTile = editor.CursorPosition + hoveredTile * (8 * editor.Scale);
+            Vector2 hoveredTile = (mousePosition - editor.CursorPosition) / (8 * editor.Scale);
+            hoveredTile = new Vector2((int)hoveredTile.X, (int)hoveredTile.Y);
+            Vector2 absoluteHoveredTile = editor.CursorPosition + hoveredTile * (8 * editor.Scale);
 
             if (editor.ActiveTile is not null)
             {
@@ -74,10 +72,10 @@ public class Draw : MapEditorTool
                     editor.UndoManager.Do(_drawAction);
                 }
 
-                ImGui.SetCursorScreenPos(absoluteHoveredTile);
+                ImGui.SetCursorScreenPos(absoluteHoveredTile.ToNumerics());
                 ImGui.Image(
                     editor.Track.Tileset.TexturePtr, 
-                    new SVector2(8* editor.Scale), 
+                    new(8* editor.Scale), 
                     new(tile/256f, 0),
                     new(tile/256f+1/256f, 1)
                     );
