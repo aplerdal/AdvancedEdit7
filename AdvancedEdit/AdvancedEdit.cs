@@ -51,8 +51,10 @@ public class AdvancedEdit : Game
     protected override void LoadContent()
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
-        _uiManager.AddWindow(new MapEditor(new Track(
-            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29044c)));
+        var track = new Track(
+            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29044c);
+        _uiManager.AddWindow(new MapEditor(track));
+        _uiManager.AddWindow(new AiEditor(track));
 
         // TODO: use this.Content to load your game content here
         base.LoadContent();
@@ -60,10 +62,6 @@ public class AdvancedEdit : Game
 
     protected override void Update(GameTime gameTime)
     {
-        if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed ||
-            Keyboard.GetState().IsKeyDown(Keys.Escape))
-            Exit();
-
         // TODO: Add your update logic here
 
         base.Update(gameTime);

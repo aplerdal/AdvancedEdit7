@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using AdvancedEdit.Compression;
 using Microsoft.Xna.Framework;
+using SVector2 = System.Numerics.Vector2;
 
 namespace AdvancedEdit.Serialization.Types;
 
@@ -19,7 +20,7 @@ public class Track
     // From track header
     public Tilemap Tilemap;
     public GameGfx Tileset; // TODO: Refactor with getters and setters to automatically fetch the correct tileset using the lookback stuff
-    public LinkedList<AiSector> AiSectors; // Linked list so rearranging and removing is faster
+    public LinkedList<AiSector> AiSectors = new LinkedList<AiSector>(); // Linked list so rearranging and removing is faster
     /// <summary>
     /// Track size in tiles
     /// </summary>
@@ -179,6 +180,58 @@ public class Track
             reader.BaseStream.Seek(layoutAddress, SeekOrigin.Begin);
             var data = Lz10.Decompress(reader, 0x4000000 - layoutAddress).ToArray();
             Tilemap = new Tilemap(Size, Tileset.Texture, data);
+        }
+        #endregion
+
+        #region Load AI
+
+        reader.BaseStream.Seek(aiAddress, SeekOrigin.Begin);
+        byte sectorCount = reader.ReadByte();
+        uint zonesAddress = aiAddress + reader.ReadUInt16();
+        uint targetsAddress = aiAddress + reader.ReadUInt16();
+        
+        reader.BaseStream.Seek(targetsAddress, SeekOrigin.Begin);
+        for (int i = 0; i < sectorCount; i++)
+        {
+            var sector = new AiSector();
+            sector.Target = new SVector2(reader.ReadUInt16(), reader.ReadUInt16());
+            byte speedFlagUnion = reader.ReadByte();
+            sector.Speed = (byte)(speedFlagUnion & 0x3);
+            sector.Flags = (SectorFlags)(speedFlagUnion & 0xF0);
+            reader.BaseStream.Seek(3, SeekOrigin.Current);
+            AiSectors.AddLast(sector);
+        }
+        reader.BaseStream.Seek(zonesAddress, SeekOrigin.Begin);
+        var currentSector = AiSectors.First;
+        for (int i = 0; i < sectorCount; i++)
+        {
+            currentSector.ValueRef.Shape = (ZoneShape)reader.ReadByte();
+            switch (currentSector.Value.Shape)
+            {
+                case ZoneShape.Rectangle:
+                    currentSector.ValueRef.Zone = new RectangleZone(
+                        new Rectangle(
+                            reader.ReadUInt16() * 2,
+                            reader.ReadUInt16() * 2, 
+                            reader.ReadUInt16() * 2, 
+                            reader.ReadUInt16() * 2
+                            )
+                        );
+                    break;
+                case ZoneShape.BottomLeft:
+                case ZoneShape.BottomRight:
+                case ZoneShape.TopLeft:
+                case ZoneShape.TopRight:
+                    currentSector.ValueRef.Zone = new TriangleZone(
+                        new SVector2(reader.ReadUInt16() * 2, reader.ReadUInt16() * 2),
+                        reader.ReadUInt16() * 2,
+                        currentSector.Value.Shape
+                    );
+                    reader.ReadUInt16();
+                    break;
+            }
+            reader.BaseStream.Seek(3, SeekOrigin.Current);
+            currentSector = currentSector.Next;
         }
         #endregion
     }

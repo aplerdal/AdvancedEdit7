@@ -21,7 +21,7 @@ public class UiManager
         {
             if (!window.IsOpen) _windows.Remove(window);
             ImGui.Begin($"{window.Name}##{window.Id}", ref window.IsOpen, window.Flags);
-            window.Draw(true);
+            window.Draw(ImGui.IsWindowFocused());
             ImGui.End();
 
 
