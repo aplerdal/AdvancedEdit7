@@ -1,8 +1,8 @@
 using System;
-using System.Numerics;
 using AdvancedEdit.Serialization.Types;
 using AdvancedEdit.UI.Tools;
 using ImGuiNET;
+using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Windows;
 
@@ -35,8 +35,8 @@ public abstract class TilemapWindow(Track track) : UiWindow
         if (MapPtr == IntPtr.Zero)
             MapPtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Track.Tilemap.TrackTexture);
 
-        ImGui.SetCursorScreenPos(CursorPosition);
-        ImGui.Image(MapPtr, MapSize);
+        ImGui.SetCursorScreenPos(CursorPosition.ToNumerics());
+        ImGui.Image(MapPtr, MapSize.ToNumerics());
         
         if (hasFocus) View.Update(this);
     }

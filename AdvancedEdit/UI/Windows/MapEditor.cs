@@ -5,7 +5,6 @@ using AdvancedEdit.UI.Undo;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SVector2 = System.Numerics.Vector2;
 
 namespace AdvancedEdit.UI.Windows;
 
@@ -48,7 +47,7 @@ public class MapEditor : TilemapWindow, IInspector
             {
                 if (ImGui.MenuItem("Reset View"))
                 {
-                    Translation = SVector2.Zero;
+                    Translation = Vector2.Zero;
                     Scale = 1.0f;
                 }
 
@@ -92,19 +91,19 @@ public class MapEditor : TilemapWindow, IInspector
     {
         ImGui.Text("Tilemap Inspector");
         ImGui.Separator();
-        SVector2 mousePosition = ImGui.GetMousePos();
-        SVector2 cursorPosition = ImGui.GetCursorScreenPos();
+        Vector2 mousePosition = ImGui.GetMousePos();
+        Vector2 cursorPosition = ImGui.GetCursorScreenPos();
         ImGui.Image(_palettePtr, new(TileDisplaySize *16));
         if (ImGui.IsItemHovered())
         {
-            SVector2 temp = ((mousePosition - cursorPosition) / TileDisplaySize); // Stupid vector2
-            SVector2 hoverTile = new SVector2((int)temp.X, (int)temp.Y);
-            SVector2 absoluteHoverTile = hoverTile * TileDisplaySize + cursorPosition;
+            Vector2 temp = ((mousePosition - cursorPosition) / TileDisplaySize); // Stupid vector2
+            Vector2 hoverTile = new Vector2((int)temp.X, (int)temp.Y);
+            Vector2 absoluteHoverTile = hoverTile * TileDisplaySize + cursorPosition;
             if (ImGui.IsItemClicked())
                 ActiveTile = (byte?)((int)hoverTile.X + (int)hoverTile.Y * 16);
             ImGui.GetForegroundDrawList().AddRect(
-                absoluteHoverTile - new SVector2(2),
-                absoluteHoverTile + new SVector2(TileDisplaySize+2),
+                (absoluteHoverTile - new Vector2(2)).ToNumerics(),
+                (absoluteHoverTile + new Vector2(TileDisplaySize+2)).ToNumerics(),
                 ImGui.GetColorU32(ImGuiCol.ButtonHovered),
                 0f,
                 0,
@@ -115,8 +114,8 @@ public class MapEditor : TilemapWindow, IInspector
         if (ActiveTile is not null)
         {
             ImGui.GetForegroundDrawList().AddRect(
-                cursorPosition + new SVector2(ActiveTile.Value%16, ActiveTile.Value/16) * TileDisplaySize - new SVector2(2),
-                cursorPosition + new SVector2(ActiveTile.Value % 16, ActiveTile.Value/16) * TileDisplaySize + new SVector2(TileDisplaySize + 2),
+                (cursorPosition + new Vector2(ActiveTile.Value%16, ActiveTile.Value/16) * TileDisplaySize - new Vector2(2)).ToNumerics(),
+                (cursorPosition + new Vector2(ActiveTile.Value % 16, ActiveTile.Value/16) * TileDisplaySize + new Vector2(TileDisplaySize + 2)).ToNumerics(),
                 ImGui.GetColorU32(ImGuiCol.ButtonActive),
                 0f,
                 0,
