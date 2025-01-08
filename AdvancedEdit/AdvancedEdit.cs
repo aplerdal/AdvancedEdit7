@@ -24,7 +24,7 @@ public class AdvancedEdit : Game
 
     public ImGuiRenderer ImGuiRenderer;
     
-    private UiManager _uiManager;
+    public UiManager UiManager;
 
     public AdvancedEdit()
     {
@@ -41,7 +41,7 @@ public class AdvancedEdit : Game
         // TODO: Add your initialization logic here
         ImGuiRenderer = new ImGuiRenderer(this);
         ImGuiRenderer.RebuildFontAtlas();
-        _uiManager = new UiManager();
+        UiManager = new UiManager();
         
         ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
@@ -51,10 +51,10 @@ public class AdvancedEdit : Game
     protected override void LoadContent()
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
-        var track = new Track(
-            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29FC74);
-        _uiManager.AddWindow(new MapEditor(track));
-        _uiManager.AddWindow(new AiEditor(track));
+        //var track = new Track(
+        //    new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29FC74);
+        //UiManager.AddWindow(new MapEditor(track));
+        //UiManager.AddWindow(new AiEditor(track));
 
         // TODO: use this.Content to load your game content here
         base.LoadContent();
@@ -73,7 +73,7 @@ public class AdvancedEdit : Game
         ImGuiRenderer.BeforeLayout(gameTime);
         // TODO: Add your drawing code here
 
-        _uiManager.DrawWindows();
+        UiManager.DrawWindows();
         
         ImGuiRenderer.AfterLayout();
         

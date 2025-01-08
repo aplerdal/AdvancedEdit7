@@ -1,10 +1,17 @@
+using System.Collections.Generic;
+using System.IO;
+using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.UI.Windows;
 using ImGuiNET;
+using NativeFileDialogs.Net;
 
 namespace AdvancedEdit.UI.Elements;
 
 public static class MenuBar
 {
     private static bool _debug;
+    public static readonly Dictionary<string, string> RomFilter = new Dictionary<string, string>() {{"MKSC Rom","gba"},{"All files","*"}};
+    
     /// <summary>
     /// Render the menu bar
     /// </summary>
@@ -17,6 +24,16 @@ public static class MenuBar
             {
                 if (ImGui.MenuItem("Open ROM", "ctrl+o"))
                 {
+                    string? path;
+                    var status = NativeFileDialogs.Net.Nfd.OpenDialog(out path, RomFilter, null);
+                    if (status == NfdStatus.Ok)
+                    {
+                        var track = new Track(
+                            new BinaryReader(File.OpenRead(path)), 27, 0x0000,
+                            0x29FC74);
+                        AdvancedEdit.Instance.UiManager.AddWindow(new MapEditor(track));
+                        AdvancedEdit.Instance.UiManager.AddWindow(new AiEditor(track));
+                    }
                 }
 
                 ImGui.MenuItem("Save ROM", "ctrl+s");
