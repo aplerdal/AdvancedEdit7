@@ -902,4 +902,8 @@ public class AiSector
             
             return points;
         }
+
+        public AiSector Clone(){
+            return new AiSector(Target, Shape, Zone, Speed, Intersection);
+        }
 }

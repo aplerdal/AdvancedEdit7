@@ -1,25 +1,42 @@
 using System;
 using System.Diagnostics;
 using System.Linq;
+using AdvancedEdit.UI.Undo;
 using AdvancedEdit.Serialization.Types;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 
 namespace AdvancedEdit.UI.Windows;
+public struct Drag(AiSector sector) : IUndoable{
+    public int SectorNumber;
+    public HoverPart Part;
+    public ResizeHandle Handle;
+    public Point LastPosition;
+    public AiSector Sector = sector;
+    private AiSector _end = null;
+    private AiSector _start = sector.Clone();
 
+
+    public void Do(){
+        _end ??= Sector.Clone();
+        Sector = _end;
+    }
+    public void Undo(){
+        Sector = _start;
+    }
+}
 public class AiEditor(Track track) : TilemapWindow(track), IInspector
 {
     public override string Name => "Ai Editor";
     public override ImGuiWindowFlags Flags =>
         ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
     private MouseCursor _mouseCursor = MouseCursor.Arrow;
+    public UndoManager UndoManager = new();
+    private bool _dragging;
 
-    private bool _draggingAi;
-    private int _dragSector;
-    private HoverPart _dragPart = HoverPart.None;
-    private ResizeHandle _dragHandle = ResizeHandle.None;
-    private Point _lastDragPosition;
+    private Drag drag = new();
     public override void Draw(bool hasFocus)
     {
         #region Menu Bar
@@ -40,11 +57,11 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         var handle = ResizeHandle.None;
         int hoveredIndex = -1;
 
-        if (_draggingAi)
+        if (_dragging)
         {
-            hovered = _dragPart;
-            handle = _dragHandle;
-            hoveredIndex = _dragSector;
+            hovered = drag.Part;
+            handle = drag.Handle;
+            hoveredIndex = drag.SectorNumber;
         }
         else
         {
@@ -92,24 +109,25 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         
         if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
         {
-            if (hovered != HoverPart.None || _draggingAi)
+            if (hovered != HoverPart.None || _dragging)
             {
-                if (!_draggingAi)
+                if (!_dragging)
                 {
-                    _dragPart = hovered;
-                    _dragHandle = handle;
-                    _dragSector = hoveredIndex;
-                    _lastDragPosition = new Point((HoveredTile.X/2), (HoveredTile.Y/2));
+                    drag = new Drag(track.AiSectors[hoveredIndex]);
+                    drag.Part = hovered;
+                    drag.Handle = handle;
+                    drag.SectorNumber = hoveredIndex;
+                    drag.LastPosition = new Point((HoveredTile.X/2), (HoveredTile.Y/2));
                 }
 
-                var sector = track.AiSectors[_dragSector];
-                _draggingAi = true;
+                var sector = drag.Sector;
+                _dragging = true;
                 var halfHovTile = new Point((HoveredTile.X/2), (HoveredTile.Y/2));
-                var delta = halfHovTile - _lastDragPosition;
-                _lastDragPosition = halfHovTile;
-                if (_dragHandle == ResizeHandle.None)
+                var delta = halfHovTile - drag.LastPosition;
+                drag.LastPosition = halfHovTile;
+                if (drag.Handle == ResizeHandle.None)
                 {
-                    if (_dragPart == HoverPart.Zone)
+                    if (drag.Part == HoverPart.Zone)
                     {
                         sector.Zone = sector.Zone with {X = sector.Zone.X+delta.X*2, Y = sector.Zone.Y+delta.Y * 2 };
                     }
@@ -117,15 +135,15 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
                 }
                 else
                 {
-                    sector.Resize(_dragHandle, HoveredTile.X, HoveredTile.Y);
+                    sector.Resize(drag.Handle, HoveredTile.X, HoveredTile.Y);
                 }
             }
         }
         else
         {
-            if (_draggingAi)
+            if (_dragging)
             {
-                _draggingAi = false;
+                UndoManager.Do(drag);
             }
         }
 
