@@ -1,11 +1,13 @@
 using System;
 using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
 using AdvancedEdit.UI.Tools;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
-using SVector2 = System.Numerics.Vector2;
+using Point = Microsoft.Xna.Framework.Point;
+using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
 namespace AdvancedEdit.Serialization.Types;
 
@@ -14,8 +16,21 @@ public enum ZoneShape
     Rectangle,
     TopLeft,
     TopRight,
-    BottomLeft,
     BottomRight,
+    BottomLeft,
+}
+
+public enum ResizeHandle
+{
+    None,
+    TopLeft,
+    Top,
+    TopRight,
+    Right,
+    BottomRight,
+    Bottom,
+    BottomLeft,
+    Left
 }
 
 [Flags]
@@ -27,213 +42,864 @@ public enum SectorFlags
 public enum HoverPart
 {
     None,
-    Target,
     Zone,
-    ScaleNW,ScaleNE, ScaleSE, ScaleSW,
-    ScaleN, ScaleS, ScaleE, ScaleW,
-    ScaleHypot,
+    Target,
 }
 
 public class AiSector
 {
-    public SVector2 Target;
+    /// <summary>
+    /// The precision for AI elements: 2 tiles
+    /// </summary>
+    public const int Precision = 2;
 
-    public ZoneShape Shape;
-    public byte Speed; // ranges from 0-3
-    public SectorFlags Flags;
-    public Zone Zone;
-}
+    private ZoneShape _shape;
 
-public abstract class Zone
-{
-    protected bool Dragging;
-
-    public abstract void Draw(TilemapWindow view);
-    public abstract HoverPart GetHoveredPart(SVector2 mousePosition);
-    public abstract void InitDrag(HoverPart part);
-    protected static readonly uint FillColor = ImGui.GetColorU32(new System.Numerics.Vector4(0.8f, 0.1f, 0.7f, 0.3f));
-    protected static readonly uint HoverColor = ImGui.GetColorU32(new System.Numerics.Vector4(0.8f, 0.1f, 0.7f, 0.5f));
-    protected static readonly uint BorderColor = ImGui.GetColorU32(new System.Numerics.Vector4(0.8f, 0.1f, 0.7f, 1.0f));
-    public abstract void Drag(HoverPart part);
-}
-
-public class RectangleZone(Rectangle rect) : Zone
-{
-    public Rectangle Rect = rect;
-    public SVector2 Min
+    /// <summary>
+    /// Gets or sets the zone shape
+    /// </summary>
+    public ZoneShape Shape
     {
-        get => new(Rect.X, Rect.Y);
-        set => Rect = new Rectangle((int)value.X, (int)value.Y,
-            Rect.Width + (Rect.X - (int)value.X), Rect.Height + (Rect.Y - (int)value.Y));
-    }
-    public SVector2 Max
-    {
-        get => new(Rect.X + Rect.Width, Rect.Y + Rect.Height);
-        set => Rect = new Rectangle(Rect.X, Rect.Y, (int)value.X - Rect.X, (int)value.Y - Rect.Y);
-    }
-
-    public override void Draw(TilemapWindow view)
-    {
-        ImGui.GetWindowDrawList().AddRectFilled(
-            view.Scale * 8 * Min + view.CursorPosition,
-            view.Scale * 8 * Max + view.CursorPosition, 
-            FillColor
-            );
-        ImGui.GetWindowDrawList().AddRect(
-            view.Scale * 8 * Min + view.CursorPosition,
-            view.Scale * 8 * Max + view.CursorPosition,
-            BorderColor,
-            0,
-            0,
-            3f
-            );
-    }
-
-    public override HoverPart GetHoveredPart(SVector2 mousePosition)
-    {
-        // TODO: implement scale hovers
-        if (mousePosition.X > Min.X && mousePosition.Y > Min.Y && mousePosition.X < Max.X && mousePosition.Y < Max.Y) 
-            return HoverPart.Zone;
-        return HoverPart.None;
-    }
-
-    private SVector2 _lastPosition;
-
-    public override void InitDrag(HoverPart part)
-    {
-        var mousePosition = ImGui.GetMousePos();
-        switch (part)
+        get => _shape;
+        set
         {
-            case HoverPart.Zone:
-                _lastPosition = mousePosition; 
-                break;
+            // Scale triangle zones to smallest side of rectangle
+            if (_shape == ZoneShape.Rectangle && value != ZoneShape.Rectangle)
+            {
+                if (_zone.Width > _zone.Height)
+                    _zone.Width = _zone.Height;
+                else
+                    _zone.Height = _zone.Width;
+            }
+            _shape = value;
         }
     }
 
-    public override void Drag(HoverPart part)
+    private Rectangle _zone;
+    /// <summary>
+    /// Gets the area
+    /// </summary>
+    public Rectangle Zone
     {
-        SVector2 mousePosition = ImGui.GetMousePos();
-        switch (part)
-        {
-            case HoverPart.Zone:
-                SVector2 delta = mousePosition-_lastPosition;
-                Rect.Location += new Point((int)delta.X, (int)delta.Y);
-                _lastPosition = mousePosition; 
-                break;
-        }
+        get => _zone;
+        set => _zone = value;
     }
-}
 
-public class TriangleZone : Zone
-{
-    public ZoneShape Shape;
-    public SVector2 Position;
-    public int Size;
-
-    public SVector2[] Points
+    private Point _target;
+    /// <summary>
+    /// Gets or sets the target
+    /// </summary>
+    public Point Target
     {
-        get
+        get => _target;
+        set => _target = Vector2.Clamp(value.ToVector2(), Vector2.Zero, new Vector2(UInt16.MaxValue)).ToPoint();
+    }
+
+    private int _speed;
+    /// <summary>
+    /// Sets the speed value of the target. Ranges from 0-3
+    /// </summary>
+    public int Speed
+    {
+        get => _speed;
+        set => _speed = Math.Clamp(value, 0, 3);
+    }
+
+    /// <summary>
+    /// Determines if the zone is treated as an intersection
+    /// </summary>
+    public bool Intersection { get; set; }
+
+    public AiSector(Point target, ZoneShape shape, Rectangle zone, int speed, bool intersection)
+    {
+        _target = target;
+        var zoneX = zone.X * Precision;
+        var zoneY = zone.Y * Precision;
+        
+        _speed = speed;
+        _shape = shape;
+        Intersection = intersection;
+
+        if (shape == ZoneShape.Rectangle)
         {
-            SVector2 vertex, armX, armY;
+            var zoneWidth = zone.Width * Precision;
+            var zoneHeight = zone.Height * Precision;
+
+            _zone = new Rectangle(zoneX, zoneY, zoneWidth + Precision, zoneHeight + Precision);
+        }
+        else
+        {
+            var zoneSize = (zone.Width + 1) * Precision;
             switch (Shape)
             {
-                case ZoneShape.BottomLeft:
-                    vertex = Position + new SVector2(2);
-                    armX = vertex with { X = vertex.X - (Size + 2) };
-                    armY = vertex with { Y = vertex.Y - (Size + 2) };
-                    break;
-                case ZoneShape.TopLeft:
-                    vertex = Position;
-                    armX = vertex with { X = vertex.X + (Size + 2) };
-                    armY = vertex with { Y = vertex.Y + (Size + 2) };
-                    break;
                 case ZoneShape.TopRight:
-                    vertex = Position + new SVector2(2, 0);
-                    armX = vertex with { X = vertex.X - (Size + 2) };
-                    armY = vertex with { Y = vertex.Y + (Size + 2) };
+                    zoneX -= zoneSize - Precision;
                     break;
                 case ZoneShape.BottomRight:
-                    vertex = Position + new SVector2(0, 2);
-                    armX = vertex with { X = vertex.X + (Size + 2) };
-                    armY = vertex with { Y = vertex.Y - (Size + 2) };
+                    zoneX -= zoneSize - Precision;
+                    zoneY -= zoneSize - Precision;
                     break;
-                default: throw new InvalidEnumArgumentException("Invalid Zone Shape");
+                case ZoneShape.BottomLeft:
+                    zoneY -= zoneSize - Precision;
+                    break;
             }
 
-            return [vertex, armX, armY];
+            _zone = new Rectangle(zoneX, zoneY, zoneSize, zoneSize);
         }
     }
 
-    public TriangleZone(SVector2 position, int size, ZoneShape shape)
+    public AiSector(Point position)
     {
-        Shape = shape;
-        Position = position;
-        Size = size;
+        const int size = 16;
+
+        var zoneX = Math.Clamp((position.X - size / 2) / Precision * Precision, 0, UInt16.MaxValue);
+        var zoneY = Math.Clamp((position.Y - size / 2) / Precision * Precision, 0, UInt16.MaxValue);
+
+        var zone = new Rectangle(zoneX, zoneY, size, size);
+        _zone = zone;
+        var x = zone.X + zone.Width / Precision;
+        var y = zone.Y + zone.Height / Precision;
+        _target = new Point(x, y);
+        _speed = 0;
     }
 
-    public override void Draw(TilemapWindow view)
+    public HoverPart GetHover(Point point)
     {
-        var temp = Points.Select(o => o * view.Scale * 8 + view.CursorPosition);
-        SVector2[] absPoints = temp.Append(temp.First()).ToArray();
-        
-        ImGui.GetWindowDrawList().AddConcavePolyFilled(ref absPoints[0], 4, FillColor);
-        ImGui.GetWindowDrawList().AddPolyline(ref absPoints[0], 4, BorderColor, 0, 3f);
-    }
-
-    private static bool PointInTriangle(SVector2 point, SVector2[] points)
-    {
-        var min = new SVector2(points.Min(v => v.X), points.Min(v => v.Y));
-        var max = new SVector2(points.Max(v => v.X), points.Max(v => v.Y));
-        if (PointInRect(point, min, max))
+        if (point.X > _target.X - 2 && point.X < _target.X + 1 && point.Y > _target.Y - 2 && point.Y < _target.Y + 1)
+            return HoverPart.Target;
+        if (Shape == ZoneShape.Rectangle)
         {
-            return PointAboveLine(points[0], points[1], points[2]) == PointAboveLine(point, points[1], points[2]);
+
+            return IntersectsWithRectangle(point) ? HoverPart.Zone : HoverPart.None;
         }
 
-        return false;
+        return IntersectsWithTriangle(point)? HoverPart.Zone : HoverPart.None;
     }
 
-    private static bool PointAboveLine(SVector2 point, SVector2 p1, SVector2 p2)
+    private bool IntersectsWithRectangle(Point point)
     {
-        return (point.X - p1.X) * (p2.Y - p1.Y) - (point.Y - p1.Y) * (p2.X - p1.X) > 0;
+        return
+            point.X >= _zone.Left &&
+            point.X < _zone.Right &&
+            point.Y >= _zone.Top &&
+            point.Y < _zone.Bottom;
     }
 
-    private static bool PointInRect(SVector2 point, SVector2 min, SVector2 max)
+    private bool IntersectsWithTriangle(Point point)
     {
-        return (point.X > min.X && point.X < max.X && point.Y > min.Y && point.Y < max.Y);
-    }
-
-    public override HoverPart GetHoveredPart(SVector2 mousePosition)
-    {
-        if (PointInTriangle(mousePosition, Points))
+        if (!IntersectsWithRectangle(point))
         {
-            return HoverPart.Zone;
+            return false;
         }
 
-        return HoverPart.None;
-    }
+        // Divide precision by 2
+        point = new Point((point.X / Precision) * Precision, (point.Y / Precision) * Precision);
+        var x = point.X - _zone.X; // X coordinate relative to the triangle top-left corner
+        var y = point.Y - _zone.Y; // Y coordinate relative to the triangle top-left corner
 
-    private SVector2 _lastPosition;
-    public override void InitDrag(HoverPart part)
-    {
-        var mousePosition = ImGui.GetMousePos();
-        switch (part)
+        switch (Shape)
         {
-            case HoverPart.Zone:
-                _lastPosition = mousePosition;
-                break;
+            case ZoneShape.TopLeft:
+                return x + (y - Precision) <= _zone.Width - Precision;
+            case ZoneShape.TopRight:
+                return x >= y;
+            case ZoneShape.BottomRight:
+                return (x + Precision) + y >= _zone.Width - Precision;
+            case ZoneShape.BottomLeft:
+                return x <= y;
+            default:
+                throw new InvalidOperationException();
         }
     }
 
-    public override void Drag(HoverPart part)
+    public ResizeHandle GetResizeHandle(Point point)
     {
-        SVector2 mousePosition = ImGui.GetMousePos();
-        switch (part)
+        if (Shape == ZoneShape.Rectangle)
         {
-            case HoverPart.Zone:
-                SVector2 delta = mousePosition - _lastPosition;
-                Position += new SVector2((int)delta.X, (int)delta.Y);
-                _lastPosition = mousePosition;
-                break;
+            return GetResizeHandleRectangle(point);
         }
+        return GetResizeHandleTriangle(point);
     }
+    
+    private ResizeHandle GetResizeHandleRectangle(Point point)
+        {
+            ResizeHandle resizeHandle;
+
+            if (point.X > _zone.Left &&
+                point.X < _zone.Right - 1 &&
+                point.Y > _zone.Top &&
+                point.Y < _zone.Bottom - 1)
+            {
+                resizeHandle = ResizeHandle.None;
+            }
+            else
+            {
+                if (point.X == _zone.Left)
+                {
+                    if (point.Y == _zone.Top)
+                    {
+                        resizeHandle = ResizeHandle.TopLeft;
+                    }
+                    else if (point.Y == _zone.Bottom - 1)
+                    {
+                        resizeHandle = ResizeHandle.BottomLeft;
+                    }
+                    else
+                    {
+                        resizeHandle = ResizeHandle.Left;
+                    }
+                }
+                else if (point.X == _zone.Right - 1)
+                {
+                    if (point.Y == _zone.Top)
+                    {
+                        resizeHandle = ResizeHandle.TopRight;
+                    }
+                    else if (point.Y == _zone.Bottom - 1)
+                    {
+                        resizeHandle = ResizeHandle.BottomRight;
+                    }
+                    else
+                    {
+                        resizeHandle = ResizeHandle.Right;
+                    }
+                }
+                else
+                {
+                    if (point.Y == _zone.Top)
+                    {
+                        resizeHandle = ResizeHandle.Top;
+                    }
+                    else
+                    {
+                        resizeHandle = ResizeHandle.Bottom;
+                    }
+                }
+            }
+
+            return resizeHandle;
+        }
+
+    private ResizeHandle GetResizeHandleTriangle(Point point)
+        {
+            int diagonal;
+
+            switch (Shape)
+            {
+                case ZoneShape.TopLeft:
+                    #region
+                    diagonal = (point.X - _zone.X) + (point.Y - _zone.Y);
+                    if (diagonal >= _zone.Width - Precision && diagonal <= _zone.Width)
+                    {
+                        return ResizeHandle.BottomRight;
+                    }
+
+                    if (point.X == _zone.Left)
+                    {
+                        return ResizeHandle.Left;
+                    }
+
+                    if (point.Y == _zone.Top)
+                    {
+                        return ResizeHandle.Top;
+                    }
+                    #endregion
+                    break;
+
+                case ZoneShape.TopRight:
+                    #region
+                    diagonal = (point.X - _zone.X) - (point.Y - _zone.Y);
+                    if (diagonal >= -Precision && diagonal <= 0)
+                    {
+                        return ResizeHandle.BottomLeft;
+                    }
+
+                    if (point.X == _zone.Right - 1)
+                    {
+                        return ResizeHandle.Right;
+                    }
+
+                    if (point.Y == _zone.Top)
+                    {
+                        return ResizeHandle.Top;
+                    }
+                    #endregion
+                    break;
+
+                case ZoneShape.BottomRight:
+                    #region
+                    diagonal = (point.X - _zone.X) + (point.Y - _zone.Y);
+                    if (diagonal >= _zone.Width - Precision && diagonal <= _zone.Width)
+                    {
+                        return ResizeHandle.TopLeft;
+                    }
+
+                    if (point.X == _zone.Right - 1)
+                    {
+                        return ResizeHandle.Right;
+                    }
+
+                    if (point.Y == _zone.Bottom - 1)
+                    {
+                        return ResizeHandle.Bottom;
+                    }
+                    #endregion
+                    break;
+
+                case ZoneShape.BottomLeft:
+                    #region
+                    diagonal = (point.X - _zone.X) - (point.Y - _zone.Y);
+                    if (diagonal >= 0 && diagonal <= Precision)
+                    {
+                        return ResizeHandle.TopRight;
+                    }
+
+                    if (point.X == _zone.Left)
+                    {
+                        return ResizeHandle.Left;
+                    }
+
+                    if (point.Y == _zone.Bottom - 1)
+                    {
+                        return ResizeHandle.Bottom;
+                    }
+                    #endregion
+                    break;
+
+                default:
+                    throw new InvalidOperationException();
+            }
+
+            return ResizeHandle.None;
+        }
+    
+    public void Resize(ResizeHandle resizeHandle, int x, int y)
+        {
+            // Halve precision, so that areas are positioned following a 2-tile (16-px) step
+            x = (x / Precision) * Precision;
+            y = (y / Precision) * Precision;
+
+            if (Shape == ZoneShape.Rectangle)
+            {
+                ResizeRectangle(resizeHandle, x, y);
+            }
+            else
+            {
+                ResizeTriangle(resizeHandle, x, y);
+            }
+        }
+
+    private void ResizeRectangle(ResizeHandle resizeHandle, int x, int y)
+        {
+            int areaX;
+            int areaY;
+            int width;
+            int height;
+
+            switch (resizeHandle)
+            {
+                case ResizeHandle.TopLeft:
+                    #region
+                    if (x >= _zone.Right)
+                    {
+                        x = _zone.Right - Precision;
+                    }
+
+                    if (y >= _zone.Bottom)
+                    {
+                        y = _zone.Bottom - Precision;
+                    }
+
+                    areaX = x;
+                    areaY = y;
+                    width = _zone.Right - x;
+                    height = _zone.Bottom - y;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Top:
+                    #region
+                    if (y >= _zone.Bottom)
+                    {
+                        y = _zone.Bottom - Precision;
+                    }
+
+                    areaX = _zone.X;
+                    areaY = y;
+                    width = _zone.Width;
+                    height = _zone.Bottom - y;
+                    #endregion
+                    break;
+
+                case ResizeHandle.TopRight:
+                    #region
+                    if (x < _zone.Left)
+                    {
+                        x = _zone.Left;
+                    }
+
+                    if (y >= _zone.Bottom)
+                    {
+                        y = _zone.Bottom - Precision;
+                    }
+
+                    areaX = _zone.X;
+                    areaY = y;
+                    width = x - _zone.Left + Precision;
+                    height = _zone.Bottom - y;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Right:
+                    #region
+                    if (x < _zone.Left)
+                    {
+                        x = _zone.Left;
+                    }
+
+                    areaX = _zone.X;
+                    areaY = _zone.Y;
+                    width = x - _zone.Left + Precision;
+                    height = _zone.Height;
+                    #endregion
+                    break;
+
+                case ResizeHandle.BottomRight:
+                    #region
+                    if (x < _zone.Left)
+                    {
+                        x = _zone.Left;
+                    }
+
+                    if (y < _zone.Top)
+                    {
+                        y = _zone.Top;
+                    }
+
+                    areaX = _zone.X;
+                    areaY = _zone.Y;
+                    width = x - _zone.Left + Precision;
+                    height = y - _zone.Top + Precision;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Bottom:
+                    #region
+                    if (y < _zone.Top)
+                    {
+                        y = _zone.Top;
+                    }
+
+                    areaX = _zone.X;
+                    areaY = _zone.Y;
+                    width = _zone.Width;
+                    height = y - _zone.Top + Precision;
+                    #endregion
+                    break;
+
+                case ResizeHandle.BottomLeft:
+                    #region
+                    if (x >= _zone.Right)
+                    {
+                        x = _zone.Right - Precision;
+                    }
+
+                    if (y < _zone.Top)
+                    {
+                        y = _zone.Top;
+                    }
+
+                    areaX = x;
+                    areaY = _zone.Y;
+                    width = _zone.Right - x;
+                    height = y - _zone.Top + Precision;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Left:
+                    #region
+                    if (x >= _zone.Right)
+                    {
+                        x = _zone.Right - Precision;
+                    }
+
+                    areaX = x;
+                    areaY = _zone.Y;
+                    width = _zone.Right - x;
+                    height = _zone.Height;
+                    #endregion
+                    break;
+
+                default:
+                    throw new InvalidOperationException();
+            }
+
+            _zone = new Rectangle(areaX, areaY, width, height);
+        }
+
+    private void ResizeTriangle(ResizeHandle resizeHandle, int x, int y)
+        {
+            int areaX;
+            int areaY;
+            int length;
+
+            switch (resizeHandle)
+            {
+                case ResizeHandle.TopLeft:
+                    #region
+                    length = (_zone.Right - x) + (_zone.Bottom - y);
+
+                    #region Validate area length
+                    if (length < Precision)
+                    {
+                        length = Precision;
+                    }
+                    else
+                    {
+                        var offBounds = Math.Max(length - _zone.Right, length - _zone.Bottom);
+                        if (offBounds > 0)
+                        {
+                            length -= offBounds;
+                        }
+                    }
+                    #endregion Validate area length
+
+                    areaX = _zone.Right - length;
+                    areaY = _zone.Bottom - length;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Top:
+                    #region
+                    length = _zone.Bottom - y;
+
+                    if (Shape == ZoneShape.TopLeft)
+                    {
+                        areaX = _zone.Left;
+
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = _zone.X + length - 256;
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+
+                        areaY = _zone.Bottom - length;
+                    }
+                    else //if (Shape == Shape.TriangleTopRight)
+                    {
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = length - _zone.Right;
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+
+                        areaX = _zone.Right - length;
+                        areaY = _zone.Bottom - length;
+                    }
+                    #endregion
+                    break;
+
+                case ResizeHandle.TopRight:
+                    #region
+                    length = (x - _zone.X) + (_zone.Bottom - y);
+                    areaX = _zone.X;
+
+                    #region Validate area length
+                    if (length < Precision)
+                    {
+                        length = Precision;
+                    }
+                    else
+                    {
+                        var offBounds = Math.Max(areaX + length - 256, length - _zone.Bottom);
+                        if (offBounds > 0)
+                        {
+                            length -= offBounds;
+                        }
+                    }
+                    #endregion Validate area length
+
+                    areaY = _zone.Bottom - length;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Right:
+                    #region
+                    length = x - _zone.X + Precision;
+                    areaX = _zone.X;
+
+                    if (Shape == ZoneShape.TopRight)
+                    {
+                        areaY = _zone.Y;
+
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = Math.Max(areaX + length - 256, areaY + length - 256);
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+                    }
+                    else //if (Shape == Shape.TriangleBottomRight)
+                    {
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = Math.Max(areaX + length - 256, length - _zone.Bottom);
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+
+                        areaY = _zone.Bottom - length;
+                    }
+                    #endregion
+                    break;
+
+                case ResizeHandle.BottomRight:
+                    #region
+                    length = (x - _zone.X) + (y - _zone.Y);
+                    areaX = _zone.X;
+                    areaY = _zone.Y;
+
+                    #region Validate area length
+                    if (length < Precision)
+                    {
+                        length = Precision;
+                    }
+                    else
+                    {
+                        var offBounds = Math.Max(areaX + length - 256, areaY + length - 256);
+                        if (offBounds > 0)
+                        {
+                            length -= offBounds;
+                        }
+                    }
+                    #endregion Validate area length
+                    #endregion
+                    break;
+
+                case ResizeHandle.Bottom:
+                    #region
+                    length = y - _zone.Y + Precision;
+                    areaY = _zone.Y;
+
+                    if (Shape == ZoneShape.BottomRight)
+                    {
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = Math.Max(length - _zone.Right, areaY + length - 256);
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+
+                        areaX = _zone.Right - length;
+                    }
+                    else //if (Shape == Shape.TriangleBottomLeft)
+                    {
+                        areaX = _zone.X;
+
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = Math.Max(areaX + length - 256, areaY + length - 256);
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+                    }
+                    #endregion
+                    break;
+
+                case ResizeHandle.BottomLeft:
+                    #region
+                    length = (_zone.Right - x) + (y - _zone.Y);
+                    areaY = _zone.Y;
+
+                    #region Validate area length
+                    if (length < Precision)
+                    {
+                        length = Precision;
+                    }
+                    else
+                    {
+                        var offBounds = Math.Max(length - _zone.Right, areaY + length - 256);
+                        if (offBounds > 0)
+                        {
+                            length -= offBounds;
+                        }
+                    }
+                    #endregion Validate area length
+
+                    areaX = _zone.Right - length;
+                    #endregion
+                    break;
+
+                case ResizeHandle.Left:
+                    #region
+                    length = _zone.Right - x;
+
+                    if (Shape == ZoneShape.TopLeft)
+                    {
+                        areaY = _zone.Y;
+
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = Math.Max(length - _zone.Right, areaY + length - 256);
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+                    }
+                    else //if (Shape == Shape.TriangleBottomLeft)
+                    {
+                        #region Validate area length
+                        if (length < Precision)
+                        {
+                            length = Precision;
+                        }
+                        else
+                        {
+                            var offBounds = Math.Max(length - _zone.Right, length - _zone.Bottom);
+                            if (offBounds > 0)
+                            {
+                                length -= offBounds;
+                            }
+                        }
+                        #endregion Validate area length
+
+                        areaY = _zone.Bottom - length;
+                    }
+
+                    areaX = _zone.Right - length;
+                    #endregion
+                    break;
+
+                default:
+                    throw new InvalidOperationException();
+            }
+
+            _zone = new Rectangle(areaX, areaY, length, length);
+        }
+    
+    public Point[] GetTriangle()
+        {
+            var points = new Point[_zone.Width + 3];
+
+            int x;
+            int y;
+            int xStep;
+            int yStep;
+            Point rightAngle;
+
+            switch (Shape)
+            {
+                case ZoneShape.TopLeft:
+                    x = _zone.X;
+                    y = _zone.Y + _zone.Height;
+                    xStep = Precision;
+                    yStep = -Precision;
+                    rightAngle = _zone.Location;
+                    break;
+
+                case ZoneShape.TopRight:
+                    x = _zone.X + _zone.Width;
+                    y = _zone.Y + _zone.Height;
+                    xStep = -Precision;
+                    yStep = -Precision;
+                    rightAngle = new Point(x, _zone.Y);
+                    break;
+
+                case ZoneShape.BottomRight:
+                    x = _zone.X + _zone.Width;
+                    y = _zone.Y;
+                    xStep = -Precision;
+                    yStep = Precision;
+                    rightAngle = new Point(x, _zone.Y + _zone.Height);
+                    break;
+
+                case ZoneShape.BottomLeft:
+                    x = _zone.X;
+                    y = _zone.Y;
+                    xStep = Precision;
+                    yStep = Precision;
+                    rightAngle = new Point(x, _zone.Y + _zone.Height);
+                    break;
+                default:
+                    throw new InvalidOperationException();
+            }
+
+            var i = 0;
+            var even = true;
+            while (i < points.Length - Precision)
+            {
+                points[i++] = new Point(x, y);
+                if (even)
+                {
+                    x += xStep;
+                }
+                else
+                {
+                    y += yStep;
+                }
+                even = !even;
+            }
+
+            points[i++] = rightAngle;
+            points[i] = points[0];
+            
+            return points;
+        }
 }

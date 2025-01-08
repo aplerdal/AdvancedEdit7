@@ -46,9 +46,9 @@ public class Draw : MapEditorTool
         Vector2 mousePosition = ImGui.GetMousePos();
         if (ImGui.IsItemHovered())
         {
-            Vector2 hoveredTile = (mousePosition - editor.CursorPosition) / (8 * editor.Scale);
+            Vector2 hoveredTile = editor.HoveredTile.ToVector2();
             hoveredTile = new Vector2((int)hoveredTile.X, (int)hoveredTile.Y);
-            Vector2 absoluteHoveredTile = editor.CursorPosition + hoveredTile * (8 * editor.Scale);
+            Vector2 absoluteHoveredTile = editor.MapPosition + hoveredTile * (8 * editor.Scale);
 
             if (editor.ActiveTile is not null)
             {

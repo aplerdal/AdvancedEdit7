@@ -8,8 +8,6 @@ namespace AdvancedEdit.UI.Windows;
 
 public abstract class TilemapWindow(Track track) : UiWindow
 {
-    //TODO: Maybe make if the image is hovered a bool or something? Lots of tools call it and that could cause issues if anything else is drawn for some reason
-    
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
     /// <summary>
     /// The current active track
@@ -26,7 +24,7 @@ public abstract class TilemapWindow(Track track) : UiWindow
     /// <summary>
     /// The absolute position of the map image
     /// </summary>
-    public Vector2 CursorPosition;
+    public Vector2 MapPosition;
     /// <summary>
     /// The size of the map image
     /// </summary>
@@ -39,6 +37,15 @@ public abstract class TilemapWindow(Track track) : UiWindow
     /// The scale of the map
     /// </summary>
     public float Scale = 1.0f;
+    /// <summary>
+    /// True when the map image is hovered
+    /// </summary>
+    public bool Hovered = false;
+
+    /// <summary>
+    /// The position of the currently hovered tile
+    /// </summary>
+    public Point HoveredTile => ((ImGui.GetMousePos() - MapPosition) / (8 * Scale)).ToPoint();
     
     protected View View = new();
 
@@ -49,16 +56,15 @@ public abstract class TilemapWindow(Track track) : UiWindow
         WindowPosition = ImGui.GetWindowPos();
         WindowSize = ImGui.GetWindowSize();
 
-        CursorPosition = WindowPosition + Translation;
+        MapPosition = WindowPosition + Translation;
         MapSize = new Vector2(Track.Size.X, Track.Size.Y) * 8 * Scale;
 
         if (MapPtr == IntPtr.Zero)
             MapPtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Track.Tilemap.TrackTexture);
 
-        ImGui.SetCursorScreenPos(CursorPosition.ToNumerics());
+        ImGui.SetCursorScreenPos(MapPosition.ToNumerics());
         ImGui.Image(MapPtr, MapSize.ToNumerics());
-        
-        if (hasFocus) View.Update(this);
+        Hovered = ImGui.IsItemHovered();
     }
 
     ~TilemapWindow()

@@ -52,7 +52,7 @@ public class AdvancedEdit : Game
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
         var track = new Track(
-            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29044c);
+            new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29FC74);
         _uiManager.AddWindow(new MapEditor(track));
         _uiManager.AddWindow(new AiEditor(track));
 

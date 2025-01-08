@@ -13,10 +13,9 @@ public class MapEditor : TilemapWindow, IInspector
     public override string Name => "Map Editor";
 
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-
+    
     public UndoManager UndoManager = new();
     private MapTool _activeTool = new Draw();
-
     private Texture2D _tilePalette;
     private IntPtr _palettePtr;
 
@@ -85,6 +84,8 @@ public class MapEditor : TilemapWindow, IInspector
             if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Y))
                 UndoManager.Redo();
         }
+
+        if (hasFocus) View.Update(this);
     }
 
     public void DrawInspector()
@@ -93,12 +94,11 @@ public class MapEditor : TilemapWindow, IInspector
         ImGui.Separator();
         Vector2 mousePosition = ImGui.GetMousePos();
         Vector2 cursorPosition = ImGui.GetCursorScreenPos();
-        ImGui.Image(_palettePtr, new(TileDisplaySize *16));
+        ImGui.Image(_palettePtr, new(TileDisplaySize * 16));
         if (ImGui.IsItemHovered())
         {
-            Vector2 temp = ((mousePosition - cursorPosition) / TileDisplaySize); // Stupid vector2
-            Vector2 hoverTile = new Vector2((int)temp.X, (int)temp.Y);
-            Vector2 absoluteHoverTile = hoverTile * TileDisplaySize + cursorPosition;
+            Point hoverTile = ((mousePosition - cursorPosition) / TileDisplaySize).ToPoint();
+            Vector2 absoluteHoverTile = hoverTile.ToVector2() * TileDisplaySize + cursorPosition;
             if (ImGui.IsItemClicked())
                 ActiveTile = (byte?)((int)hoverTile.X + (int)hoverTile.Y * 16);
             ImGui.GetForegroundDrawList().AddRect(

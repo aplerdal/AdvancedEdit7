@@ -17,7 +17,7 @@ public class View : MapTool
     {
         Vector2 mousePos = ImGui.GetMousePos();
         // Checks hover over image
-        if (ImGui.IsItemHovered())
+        if (window.Hovered)
         {
             if (ImGui.IsMouseClicked(ImGuiMouseButton.Middle))
             {
@@ -30,7 +30,7 @@ public class View : MapTool
             _lastScrollValue = Mouse.GetState().ScrollWheelValue / 360f;
             if (wheel != 0)
             {
-                Vector2 relativeMousePosition = mousePos - window.CursorPosition;
+                Vector2 relativeMousePosition = mousePos - window.MapPosition;
                 if (wheel > 0)
                     window.Scale *= ZoomFactor;
                 else
