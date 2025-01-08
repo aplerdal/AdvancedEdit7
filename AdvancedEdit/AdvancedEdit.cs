@@ -23,8 +23,8 @@ public class AdvancedEdit : Game
     public SpriteBatch SpriteBatch;
 
     public ImGuiRenderer ImGuiRenderer;
-    
     public UiManager UiManager;
+    public TrackManager TrackManager;
 
     public AdvancedEdit()
     {
