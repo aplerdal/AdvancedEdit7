@@ -10,9 +10,9 @@ namespace AdvancedEdit.Serialization.Types;
 [Flags]
 public enum TrackFlags
 {
-    SplitTileset,
-    SplitLayout,
-    SplitObjects,
+    SplitTileset = 1,
+    SplitLayout = 2,
+    SplitObjects = 4,
 }
 public class Track
 {
@@ -124,8 +124,7 @@ public class Track
         {
             //TODO: tileset lookback
             Tileset = null;
-        }
-        if (Flags.HasFlag(TrackFlags.SplitTileset))
+        } else if (Flags.HasFlag(TrackFlags.SplitTileset))
         {
             long pos = tilesetAddress;
             byte[] indicies = new byte[4096*4];
@@ -153,7 +152,6 @@ public class Track
         #endregion
         
         #region Load Layout
-
         if (Flags.HasFlag(TrackFlags.SplitLayout))
         {
             uint pos = layoutAddress;
@@ -172,14 +170,16 @@ public class Track
                     Array.Copy(data, 0, indicies, i*4096, 4096);
                 }
             }
-
-            Tilemap = new Tilemap(Size, Tileset.Texture, indicies);
+            
+            if (Tileset is not null)
+                Tilemap = new Tilemap(Size, Tileset.Texture, indicies);
         }
         else
         {
             reader.BaseStream.Seek(layoutAddress, SeekOrigin.Begin);
             var data = Lz10.Decompress(reader, 0x4000000 - layoutAddress).ToArray();
-            Tilemap = new Tilemap(Size, Tileset.Texture, data);
+            if (Tileset is not null)
+                Tilemap = new Tilemap(Size, Tileset.Texture, data);
         }
         #endregion
 

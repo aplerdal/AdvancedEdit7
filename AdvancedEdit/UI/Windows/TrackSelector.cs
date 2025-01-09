@@ -1,4 +1,6 @@
 
+using System;
+using AdvancedEdit.Serialization.Types;
 using ImGuiNET;
 
 namespace AdvancedEdit.UI.Windows;
@@ -6,8 +8,9 @@ namespace AdvancedEdit.UI.Windows;
 public class TrackSelector : UiWindow {
     public override string Name => "Tracks";
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.None;
+    public override string WindowId => "selector";
 
-    static readonly int[] trackMapping = {
+    public static readonly int[] TrackMapping = {
          0, 1, 2, 3, // SNES    Mushroom
          4, 5, 6, 7, //         Flower
          8, 9,10,11, //         Lightning
@@ -21,11 +24,13 @@ public class TrackSelector : UiWindow {
         43,41,42,39, //         Special
         44,45,46,47, //         Battle
     };
-    static readonly string[] pagesList = {
+
+    public static readonly string[] PagesList = {
         "SNES Tracks",
         "MKSC Tracks"
     };
-    static readonly string[] cupsList = {
+
+    public static readonly string[] CupsList = {
     // SNES
         "Mushroom Cup",
         "Flower Cup",
@@ -41,7 +46,8 @@ public class TrackSelector : UiWindow {
         "Special Cup",
         "Battle",
     };
-    static readonly string[] tracksList = {
+
+    public static readonly string[] TracksList = {
     // SNES Mushroom
         "Mario Circuit 1",
         "Donut Plains 1",
@@ -103,19 +109,30 @@ public class TrackSelector : UiWindow {
         "Battle Course 3",
         "Battle Course 4",
     };
+
+    public static string GetTrackName(int id)
+    {
+        return TracksList[Array.FindIndex(TrackSelector.TrackMapping, x => x == id)];
+    }
     public override void Draw(bool hasFocus)
     {
-        for (int page = 0; page < pagesList.Length; page++){
+        if (AdvancedEdit.Instance.TrackManager == null)
+        {
+            ImGui.Text("No ROM Loaded");
+            return;
+        }
+        for (int page = 0; page < PagesList.Length; page++){
             ImGui.PushID(page);
-            if (ImGui.TreeNode(pagesList[page])){
-                for (int cup = 0; cup < cupsList.Length/pagesList.Length; cup++){
+            if (ImGui.TreeNode(PagesList[page])){
+                for (int cup = 0; cup < CupsList.Length/PagesList.Length; cup++){
                     ImGui.PushID(cup);
-                    if (ImGui.TreeNode(cupsList[cup+page*(cupsList.Length/pagesList.Length)])){
-                        for (int track = 0; track < tracksList.Length/cupsList.Length; track++){
+                    if (ImGui.TreeNode(CupsList[cup+page*(CupsList.Length/PagesList.Length)])){
+                        for (int track = 0; track < TracksList.Length/CupsList.Length; track++){
                             ImGui.PushID(track);
-                            if (ImGui.Button(tracksList[track+(cup+page*(cupsList.Length/pagesList.Length))*tracksList.Length/cupsList.Length])) {
+                            if (ImGui.Button(TracksList[track+(cup+page*(CupsList.Length/PagesList.Length))*TracksList.Length/CupsList.Length]))
+                            {
                                 var t = AdvancedEdit.Instance.TrackManager.Tracks[
-                                    trackMapping[track+(cup+page*(cupsList.Length/pagesList.Length))*tracksList.Length/cupsList.Length]
+                                    TrackMapping[track+(cup+page*(CupsList.Length/PagesList.Length))*TracksList.Length/CupsList.Length]
                                 ];
                                 AdvancedEdit.Instance.UiManager.AddWindow(new MapEditor(t));
                                 AdvancedEdit.Instance.UiManager.AddWindow(new AiEditor(t));

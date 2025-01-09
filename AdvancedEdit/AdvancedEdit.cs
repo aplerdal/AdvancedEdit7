@@ -55,6 +55,7 @@ public class AdvancedEdit : Game
         //    new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29FC74);
         //UiManager.AddWindow(new MapEditor(track));
         //UiManager.AddWindow(new AiEditor(track));
+        UiManager.AddWindow(new TrackSelector());
 
         // TODO: use this.Content to load your game content here
         base.LoadContent();

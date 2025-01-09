@@ -8,6 +8,7 @@ namespace AdvancedEdit.UI.Windows;
 public class TestTrack : UiWindow
 {
     public override string Name { get => "Test Track"; }
+    public override string WindowId => "testtrack";
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
     Track track;
     private IntPtr _texture;

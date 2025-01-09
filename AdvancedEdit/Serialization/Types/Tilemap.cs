@@ -15,8 +15,8 @@ public class Tilemap
     public Tilemap(Point trackSize, Texture2D tileset, byte[] indicies)
     {
         _tileset = tileset;
-        if (trackSize.X * trackSize.Y != indicies.Length)
-            throw new InvalidDataException("Track size does not match indicies size");
+        //if (trackSize.X * trackSize.Y != indicies.Length)
+            //throw new InvalidDataException("Track size does not match indicies size");
         Layout = new byte[trackSize.X, trackSize.Y];
         
         // Read the track in

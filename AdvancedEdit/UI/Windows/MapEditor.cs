@@ -10,7 +10,8 @@ namespace AdvancedEdit.UI.Windows;
 
 public class MapEditor : TilemapWindow, IInspector
 {
-    public override string Name => "Map Editor";
+    public override string Name => $"Map - {TrackSelector.GetTrackName(Track.Id)}";
+    public override string WindowId => "mapeditor";
 
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
     

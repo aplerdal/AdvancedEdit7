@@ -9,6 +9,8 @@ public class UiManager
 {
     private int _windowId = 0;
     LinkedList<UiWindow> _windows = new();
+    private Dictionary<string, int> Ids = new();
+    private UiWindow _focused = null;
 
     /// <summary>
     /// Render and handle input for all windows from the current window list;
@@ -20,17 +22,20 @@ public class UiManager
         foreach (var window in _windows.ToArray())
         {
             if (!window.IsOpen) _windows.Remove(window);
-            ImGui.Begin($"{window.Name}##{window.Id}", ref window.IsOpen, window.Flags);
-            window.Draw(ImGui.IsWindowFocused());
-            ImGui.End();
-
-
-            if (window is IInspector inspector)
+            ImGui.Begin($"{window.Name}###{window.WindowId + window.Id}", ref window.IsOpen, window.Flags);
+            if (ImGui.IsWindowFocused())
             {
-                ImGui.Begin("Inspector");
-                inspector.DrawInspector();   
-                ImGui.End();
+                _focused = window;
             }
+            window.Draw(_focused == window);
+            ImGui.End();
+        }
+
+        if (_focused is IInspector inspector)
+        {
+            ImGui.Begin("Inspector");
+            inspector.DrawInspector();
+            ImGui.End();
         }
         // if window is focused draw inspector and call update
     }
@@ -41,7 +46,11 @@ public class UiManager
     /// <param name="window">Window to be added</param>
     public void AddWindow(UiWindow window)
     {
-        window.Id = _windowId++;
+        if (!Ids.ContainsKey(window.WindowId))
+            Ids[window.WindowId] = 0;
+        else 
+            Ids[window.WindowId]++;
+        window.Id = Ids[window.WindowId];
         _windows.AddLast(window);
     }
 }

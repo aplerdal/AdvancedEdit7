@@ -8,6 +8,7 @@ public abstract class UiWindow
     /// The human-readable name of the current window
     /// </summary>
     public abstract string Name { get; }
+    public abstract string WindowId { get; }
     /// <summary>
     /// Window flags to be called when drawing this window
     /// </summary>

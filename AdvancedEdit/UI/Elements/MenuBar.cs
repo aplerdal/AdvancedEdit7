@@ -58,6 +58,10 @@ public static class MenuBar
             if (ImGui.BeginMenu("Window"))
             {
                 ImGui.MenuItem("Debug Window", null, ref _debug);
+                if (ImGui.MenuItem("Track Selector"))
+                {
+                    AdvancedEdit.Instance.UiManager.AddWindow(new TrackSelector());
+                }
                 ImGui.EndMenu();
             }
 

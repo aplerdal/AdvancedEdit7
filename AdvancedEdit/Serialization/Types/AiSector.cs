@@ -163,6 +163,15 @@ public class AiSector
         _speed = 0;
     }
 
+    public AiSector(AiSector oldSector)
+    {
+        _target = oldSector.Target;
+        _zone = oldSector.Zone;
+        _speed = oldSector.Speed;
+        _shape = oldSector.Shape;
+        Intersection = oldSector.Intersection;
+    } 
+
     public HoverPart GetHover(Point point)
     {
         if (point.X > _target.X - 2 && point.X < _target.X + 1 && point.Y > _target.Y - 2 && point.Y < _target.Y + 1)
@@ -903,7 +912,21 @@ public class AiSector
             return points;
         }
 
-        public AiSector Clone(){
-            return new AiSector(Target, Shape, Zone, Speed, Intersection);
-        }
+    public static bool operator ==(AiSector sector1, AiSector sector2)
+    {
+        return (sector1.Shape == sector2.Shape) && 
+               (sector1.Zone == sector2.Zone) &&
+               (sector1.Target == sector2.Target) &&
+               (sector1.Speed == sector2.Speed) && 
+               (sector1.Intersection == sector2.Intersection);
+    }
+
+    public static bool operator !=(AiSector sector1, AiSector sector2)
+    {
+        return !((sector1.Shape == sector2.Shape) &&
+               (sector1.Zone == sector2.Zone) &&
+               (sector1.Target == sector2.Target) &&
+               (sector1.Speed == sector2.Speed) &&
+               (sector1.Intersection == sector2.Intersection));
+    }
 }

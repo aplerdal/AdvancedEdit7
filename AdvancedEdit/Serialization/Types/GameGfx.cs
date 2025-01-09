@@ -36,7 +36,7 @@ public class GameGfx(Point size, byte[] indicies, Color[] palette)
         for (int tile = 0; tile < (size.X * size.Y)/64; tile++)
             for (int y = 0; y < 8; y++)
                 for (int x = 0; x < 8; x++)
-                    colors[x + y * 256*8 + tile * 8] = palette[indicies[x + y * 8 + tile * 64]];
+                    colors[x + y * 256*8 + tile * 8] = palette[indicies[x + y * 8 + tile * 64]%64];
         tempTexture.SetData(colors);
         _cache = tempTexture;
     }
