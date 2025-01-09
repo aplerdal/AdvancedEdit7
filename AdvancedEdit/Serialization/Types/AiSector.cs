@@ -48,6 +48,7 @@ public enum HoverPart
 
 public class AiSector
 {
+    #region Properties
     /// <summary>
     /// The precision for AI elements: 2 tiles
     /// </summary>
@@ -110,6 +111,38 @@ public class AiSector
     /// </summary>
     public bool Intersection { get; set; }
 
+    /// <summary>
+    /// Gets and sets the position of the zone
+    /// </summary>
+    public Point Position
+    {
+        get => Zone.Location;
+        set => _zone.Location = value;
+    }
+
+    /// <summary>
+    /// Returns the center point of the zone
+    /// </summary>
+    public Vector2 Center
+    {
+        get{
+            switch (Shape) {
+                default:
+                case ZoneShape.Rectangle:
+                    return Position.ToVector2() + Zone.Size.ToVector2()*(1/2);
+                case ZoneShape.TopLeft:
+                    return Position.ToVector2() + Zone.Size.ToVector2()*(1/4);
+                case ZoneShape.BottomRight:
+                    return Position.ToVector2() + Zone.Size.ToVector2()*(3/4);
+                case ZoneShape.TopRight:
+                    return Position.ToVector2() + new Vector2(Zone.Size.X*(3/4), Zone.Size.Y*(1/4));
+                case ZoneShape.BottomLeft:
+                    return Position.ToVector2() + new Vector2(Zone.Size.X*(1/4), Zone.Size.Y*(3/4));
+            }
+        }
+    }
+    #endregion
+
     public AiSector(Point target, ZoneShape shape, Rectangle zone, int speed, bool intersection)
     {
         _target = target;
@@ -147,7 +180,6 @@ public class AiSector
             _zone = new Rectangle(zoneX, zoneY, zoneSize, zoneSize);
         }
     }
-
     public AiSector(Point position)
     {
         const int size = 16;

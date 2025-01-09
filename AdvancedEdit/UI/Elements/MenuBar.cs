@@ -10,6 +10,9 @@ namespace AdvancedEdit.UI.Elements;
 public static class MenuBar
 {
     private static bool _debug;
+    /// <summary>
+    /// File filter for gba files
+    /// </summary>
     public static readonly Dictionary<string, string> RomFilter = new Dictionary<string, string>() {{"MKSC Rom","gba"},{"All files","*"}};
     
     /// <summary>

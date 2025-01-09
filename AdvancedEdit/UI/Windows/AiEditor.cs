@@ -169,10 +169,16 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
             }
         }
 
+        bool tab = ImGui.IsKeyDown(ImGuiKey.Tab);
         for (var i = 0; i < track.AiSectors.Count; i++)
         {
             var sector = track.AiSectors[i];
             DrawAiSector(sector, i==hoveredIndex, i==_selectedSector);
+            if (tab){
+                var halfTextSize = ImGui.CalcTextSize(i.ToString())/2;
+                ImGui.GetWindowDrawList().AddRectFilled((sector.Center-halfTextSize).ToNumerics(), (sector.Center+halfTextSize).ToNumerics(), 0x80404040);
+                ImGui.GetWindowDrawList().AddText((sector.Center-halfTextSize).ToNumerics(), 0xffffffff, $"{i}");
+            }
         }
         #endregion
 
@@ -184,6 +190,12 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
                 UndoManager.Undo();
             if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Y))
                 UndoManager.Redo();
+            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D) && _selectedSector!=-1) {
+                var sector = new AiSector(track.AiSectors[_selectedSector]);
+                sector.Position += new Point(2);
+                sector.Target += new Point(2);
+                track.AiSectors.Add(sector);
+            }
             View.Update(this);
         }
         
@@ -234,6 +246,41 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
             ImGui.SameLine();
             HelpMarker("Determines if the element is at an intersection. When an AI element is flagged as an intersection, this tells the AI to ignore the intersected AI zones, and avoids track object display issues when switching zones.");
             sector.Intersection = intersectionBuffer;
+        }
+        ImGui.SeparatorText("Sector List");
+        if (ImGui.Button("Add Sector")) {
+            track.AiSectors.Add(new AiSector(new Point(64,64)));
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Duplicate Sector")){
+            track.AiSectors.Add(new(track.AiSectors[_selectedSector]));
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Delete Sector")){
+            track.AiSectors.RemoveAt(_selectedSector);
+        }
+        if (ImGui.TreeNode("Sectors"))
+        {
+            // Simple reordering
+            for (int n = 0; n < track.AiSectors.Count; n++)
+            {
+                string item = $"Sector {n}";
+                ImGui.Selectable(item);
+
+                if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
+                {
+                    int n_next = n + (ImGui.GetMouseDragDelta(0).Y < 0f ? -1 : 1);
+                    if (n_next >= 0 && n_next < track.AiSectors.Count)
+                    {
+                        var sector = track.AiSectors[n];
+                        track.AiSectors[n] = track.AiSectors[n_next];
+                        track.AiSectors[n_next] = sector;
+                        ImGui.ResetMouseDragDelta();
+                    }
+                }
+            }
+
+            ImGui.TreePop();
         }
     }
 
