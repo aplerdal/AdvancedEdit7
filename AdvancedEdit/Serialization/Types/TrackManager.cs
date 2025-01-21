@@ -8,7 +8,7 @@ public class TrackManager {
     public const int TrackCount = 49;
     public const uint TrackTable = 0x258000;
     public const uint DefintionTable = 0xe7ff0;
-    public Track[] Tracks = new Track[TrackCount];
+    public static Track[] Tracks = new Track[TrackCount];
     public TrackManager(BinaryReader reader){
         for (int i = 0; i < TrackCount; i++) {
             reader.BaseStream.Seek(DefintionTable + 4*i, SeekOrigin.Begin);

@@ -19,7 +19,18 @@ public class Track
     public int Id;
     // From track header
     public Tilemap Tilemap;
-    public GameGfx Tileset; // TODO: Refactor with getters and setters to automatically fetch the correct tileset using the lookback stuff
+    private GameGfx? _tileset;
+
+    public GameGfx Tileset
+    {
+        get
+        {
+            if (_tileset is not null) return _tileset;
+            if (ReusedTileset == 0) throw new Exception("Tileset null, not reused.");
+            return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
+        }
+        set => _tileset = value;
+    }
     public List<AiSector> AiSectors = new List<AiSector>(); // Linked list so rearranging and removing is faster
     /// <summary>
     /// Track size in tiles
@@ -122,8 +133,7 @@ public class Track
         
         if (ReusedTileset != 0)
         {
-            //TODO: tileset lookback
-            Tileset = null;
+            _tileset = null;
         } else if (Flags.HasFlag(TrackFlags.SplitTileset))
         {
             long pos = tilesetAddress;
@@ -171,15 +181,13 @@ public class Track
                 }
             }
             
-            if (Tileset is not null)
-                Tilemap = new Tilemap(Size, Tileset.Texture, indicies);
+            Tilemap = new Tilemap(Size, Tileset.Texture, indicies);
         }
         else
         {
             reader.BaseStream.Seek(layoutAddress, SeekOrigin.Begin);
             var data = Lz10.Decompress(reader, 0x4000000 - layoutAddress).ToArray();
-            if (Tileset is not null)
-                Tilemap = new Tilemap(Size, Tileset.Texture, data);
+            Tilemap = new Tilemap(Size, Tileset.Texture, data);
         }
         #endregion
 

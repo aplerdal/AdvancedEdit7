@@ -129,15 +129,15 @@ public class AiSector
             switch (Shape) {
                 default:
                 case ZoneShape.Rectangle:
-                    return Position.ToVector2() + Zone.Size.ToVector2()*(1/2);
+                    return Position.ToVector2() + Zone.Size.ToVector2()*(1/2f);
                 case ZoneShape.TopLeft:
-                    return Position.ToVector2() + Zone.Size.ToVector2()*(1/4);
+                    return Position.ToVector2() + Zone.Size.ToVector2()*(1/4f);
                 case ZoneShape.BottomRight:
-                    return Position.ToVector2() + Zone.Size.ToVector2()*(3/4);
+                    return Position.ToVector2() + Zone.Size.ToVector2()*(3/4f);
                 case ZoneShape.TopRight:
-                    return Position.ToVector2() + new Vector2(Zone.Size.X*(3/4), Zone.Size.Y*(1/4));
+                    return Position.ToVector2() + new Vector2(Zone.Size.X*(3/4f), Zone.Size.Y*(1/4f));
                 case ZoneShape.BottomLeft:
-                    return Position.ToVector2() + new Vector2(Zone.Size.X*(1/4), Zone.Size.Y*(3/4));
+                    return Position.ToVector2() + new Vector2(Zone.Size.X*(1/4f), Zone.Size.Y*(3/4f));
             }
         }
     }

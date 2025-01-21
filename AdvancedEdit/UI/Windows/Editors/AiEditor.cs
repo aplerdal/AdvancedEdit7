@@ -1,15 +1,16 @@
 using System;
-using System.Diagnostics;
+using System.Collections.Generic;
 using System.Linq;
-using AdvancedEdit.UI.Undo;
 using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.UI.Undo;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
-using System.Collections.Generic;
 
-namespace AdvancedEdit.UI.Windows;
-public struct Drag : IUndoable{
+namespace AdvancedEdit.UI.Windows.Editors;
+
+public struct Drag : IUndoable
+{
     public int SectorNumber;
     public HoverPart Part;
     public ResizeHandle Handle;
@@ -26,44 +27,31 @@ public struct Drag : IUndoable{
     }
 
 
-    public void Do(){
-        _new ??= new (_sectors[SectorNumber]);
+    public void Do()
+    {
+        _new ??= new(_sectors[SectorNumber]);
         _sectors[SectorNumber] = _new;
     }
-    public void Undo(){
+
+    public void Undo()
+    {
         _sectors[SectorNumber] = Original;
     }
 }
-public class AiEditor(Track track) : TilemapWindow(track), IInspector
+
+public class AiEditor(TilemapWindow window) : TrackEditor(window)
 {
-    public override string Name => $"Ai - {TrackSelector.GetTrackName(Track.Id)}";
-    public override string WindowId => "aieditor";
-
-    public override ImGuiWindowFlags Flags =>
-        ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-
-    public UndoManager UndoManager = new();
-    
     private MouseCursor _mouseCursor = MouseCursor.Arrow;
     private bool _dragging;
-    private int _selectedSector;
+    private int _selectedSector = -1;
 
     private Drag _drag = new();
-    public override void Draw(bool hasFocus)
+
+    public override string Name => "Ai Editor";
+    public override string Id => "aieditor";
+
+    public override void Update(bool hasFocus)
     {
-        #region Menu Bar
-
-        if (ImGui.BeginMenuBar())
-        {
-            // TODO: AI Menu bar
-            ImGui.EndMenuBar();
-        }
-
-        #endregion
-        
-        base.Draw(hasFocus);
-
-        #region Ai Input
         _mouseCursor = MouseCursor.Arrow;
         var hovered = HoverPart.None;
         var handle = ResizeHandle.None;
@@ -77,19 +65,19 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         }
         else
         {
-            for (var i = 0; i < track.AiSectors.Count; i++)
+            for (var i = 0; i < Window.Track.AiSectors.Count; i++)
             {
-                var sector = track.AiSectors[i];
+                var sector = Window.Track.AiSectors[i];
                 if (hasFocus)
                 {
-                    var thisHover = sector.GetHover(HoveredTile);
+                    var thisHover = sector.GetHover(Window.HoveredTile);
                     if (thisHover > hovered)
                     {
                         hovered = thisHover;
                         hoveredIndex = i;
 
-                        handle = sector.GetResizeHandle(HoveredTile);
-                        if (handle != ResizeHandle.None)
+                        handle = sector.GetResizeHandle(Window.HoveredTile);
+                        if (handle != ResizeHandle.None && hovered != HoverPart.Target)
                         {
                             switch (handle)
                             {
@@ -124,15 +112,15 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
             {
                 if (!_dragging)
                 {
-                    _drag = new Drag(track.AiSectors, hoveredIndex);
+                    _drag = new Drag(Window.Track.AiSectors, hoveredIndex);
                     _drag.Part = hovered;
                     _drag.Handle = handle;
-                    _drag.LastPosition = new Point((HoveredTile.X/2), (HoveredTile.Y/2));
+                    _drag.LastPosition = new Point(Window.HoveredTile.X/2, Window.HoveredTile.Y/2);
                 }
 
-                var sector = track.AiSectors[_drag.SectorNumber];
+                var sector = Window.Track.AiSectors[_drag.SectorNumber];
                 _dragging = true;
-                var halfHovTile = new Point((HoveredTile.X/2), (HoveredTile.Y/2));
+                var halfHovTile = new Point(Window.HoveredTile.X/2, Window.HoveredTile.Y/2);
                 var delta = halfHovTile - _drag.LastPosition;
                 _drag.LastPosition = halfHovTile;
                 if (_drag.Handle == ResizeHandle.None || _drag.Part == HoverPart.Target)
@@ -145,7 +133,7 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
                 }
                 else
                 {
-                    sector.Resize(_drag.Handle, HoveredTile.X, HoveredTile.Y);
+                    sector.Resize(_drag.Handle, Window.HoveredTile.X, Window.HoveredTile.Y);
                 }
             }
             else
@@ -158,7 +146,7 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
             if (_dragging)
             {
                 _dragging = false;
-                if (_drag.Original == track.AiSectors[_drag.SectorNumber])
+                if (_drag.Original == Window.Track.AiSectors[_drag.SectorNumber])
                 {
                     _selectedSector = _drag.SectorNumber;
                 }
@@ -170,37 +158,20 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         }
 
         bool tab = ImGui.IsKeyDown(ImGuiKey.Tab);
-        for (var i = 0; i < track.AiSectors.Count; i++)
+        for (var i = 0; i < Window.Track.AiSectors.Count; i++)
         {
-            var sector = track.AiSectors[i];
+            var sector = Window.Track.AiSectors[i];
             DrawAiSector(sector, i==hoveredIndex, i==_selectedSector);
             if (tab){
                 var halfTextSize = ImGui.CalcTextSize(i.ToString())/2;
-                ImGui.GetWindowDrawList().AddRectFilled((sector.Center-halfTextSize).ToNumerics(), (sector.Center+halfTextSize).ToNumerics(), 0x80404040);
-                ImGui.GetWindowDrawList().AddText((sector.Center-halfTextSize).ToNumerics(), 0xffffffff, $"{i}");
+                var center = sector.Center * Window.Scale * 8 + Window.MapPosition;
+                ImGui.GetWindowDrawList().AddRectFilled(((center - halfTextSize)).ToNumerics(), (center + halfTextSize).ToNumerics(), 0x80404040);
+                ImGui.GetWindowDrawList().AddText(((center - halfTextSize)).ToNumerics(), 0xffffffff, $"{i}");
             }
         }
-        #endregion
-
-
-
-        if (hasFocus)
-        {
-            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Z))
-                UndoManager.Undo();
-            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Y))
-                UndoManager.Redo();
-            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D) && _selectedSector!=-1) {
-                var sector = new AiSector(track.AiSectors[_selectedSector]);
-                sector.Position += new Point(2);
-                sector.Target += new Point(2);
-                track.AiSectors.Add(sector);
-            }
-            View.Update(this);
-        }
-        
     }
-    public void DrawInspector()
+
+    public override void DrawInspector()
     {
         ImGui.SeparatorText($"Ai Editor");
         if (_selectedSector == -1)
@@ -221,7 +192,7 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         }
         else
         {
-            var sector = track.AiSectors[_selectedSector];
+            var sector = Window.Track.AiSectors[_selectedSector];
 
             int shape = (int)sector.Shape;
             ImGui.Combo("Shape", ref shape, [
@@ -249,38 +220,20 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         }
         ImGui.SeparatorText("Sector List");
         if (ImGui.Button("Add Sector")) {
-            track.AiSectors.Add(new AiSector(new Point(64,64)));
+            Window.Track.AiSectors.Add(new AiSector(new Point(64,64)));
         }
         ImGui.SameLine();
-        if (ImGui.Button("Duplicate Sector")){
-            track.AiSectors.Add(new(track.AiSectors[_selectedSector]));
+        if ((ImGui.Button("Duplicate Sector") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D)) && _selectedSector != -1){
+            var sector = new AiSector(Window.Track.AiSectors[_selectedSector]);
+            sector.Position += new Point(2);
+            sector.Target += new Point(2);
+            Window.Track.AiSectors.Add(sector);
+            _selectedSector = Window.Track.AiSectors.Count - 1;
         }
         ImGui.SameLine();
-        if (ImGui.Button("Delete Sector")){
-            track.AiSectors.RemoveAt(_selectedSector);
-        }
-        if (ImGui.TreeNode("Sectors"))
-        {
-            // Simple reordering
-            for (int n = 0; n < track.AiSectors.Count; n++)
-            {
-                string item = $"Sector {n}";
-                ImGui.Selectable(item);
-
-                if (ImGui.IsItemActive() && !ImGui.IsItemHovered())
-                {
-                    int n_next = n + (ImGui.GetMouseDragDelta(0).Y < 0f ? -1 : 1);
-                    if (n_next >= 0 && n_next < track.AiSectors.Count)
-                    {
-                        var sector = track.AiSectors[n];
-                        track.AiSectors[n] = track.AiSectors[n_next];
-                        track.AiSectors[n_next] = sector;
-                        ImGui.ResetMouseDragDelta();
-                    }
-                }
-            }
-
-            ImGui.TreePop();
+        if (ImGui.Button("Delete Sector") || ImGui.IsKeyPressed(ImGuiKey.Delete)){
+            Window.Track.AiSectors.RemoveAt(_selectedSector);
+            _selectedSector = Math.Clamp(_selectedSector, 0, Window.Track.AiSectors.Count - 1);
         }
     }
 
@@ -289,7 +242,7 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         ImGui.TextDisabled("(?)");
         if (ImGui.BeginItemTooltip())
         {
-            ImGui.PushTextWrapPos(ImGui.GetFontSize()*35f);
+            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35f);
             ImGui.TextUnformatted(desc);
             ImGui.PopTextWrapPos();
             ImGui.EndTooltip();
@@ -298,9 +251,8 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
 
     // Colors: 0x82ed76ff, 0x76ede1ff, 0xe176ed, 0xed7682
     private static readonly uint[] SolidZoneColors = [0xff82ed76, 0xff76ede1, 0xffe176ed, 0xffed7682];
-    private static readonly uint[] FillZoneColors  = [0x4082ed76, 0x4076ede1, 0x40e176ed, 0x40ed7682];
+    private static readonly uint[] FillZoneColors = [0x4082ed76, 0x4076ede1, 0x40e176ed, 0x40ed7682];
     private static readonly uint[] HoverZoneColors = [0x8082ed76, 0x8076ede1, 0x80e176ed, 0x80ed7682];
-
     private void DrawAiSector(AiSector sector, bool hovered, bool selected)
     {
         var drawlist = ImGui.GetWindowDrawList();
@@ -310,14 +262,14 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         if (sector.Shape == ZoneShape.Rectangle)
         {
             var rect = sector.Zone;
-            var min = rect.Location.ToVector2().ToNumerics() * Scale * 8 + MapPosition.ToNumerics();
-            var max = (rect.Location + rect.Size).ToVector2().ToNumerics() * Scale * 8 + MapPosition.ToNumerics();
+            var min = rect.Location.ToVector2().ToNumerics() * Window.Scale * 8 + Window.MapPosition.ToNumerics();
+            var max = (rect.Location + rect.Size).ToVector2().ToNumerics() * Window.Scale * 8 + Window.MapPosition.ToNumerics();
             drawlist.AddRectFilled(min, max, fillColor);
             drawlist.AddRect(min, max, outlineColor, 0, 0, outlineThickness);
 
-            var tmin = ((sector.Target.ToVector2() - Vector2.One) * Scale * 8 + MapPosition).ToNumerics();
-            var tget = ((sector.Target.ToVector2()) * Scale * 8 + MapPosition).ToNumerics();
-            var tmax = ((sector.Target.ToVector2() + Vector2.One) * Scale * 8 + MapPosition).ToNumerics();
+            var tmin = ((sector.Target.ToVector2() - Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
+            var tget = ((sector.Target.ToVector2()) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
+            var tmax = ((sector.Target.ToVector2() + Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
             drawlist.AddRectFilled(tmin, tmax, fillColor);
             drawlist.AddRect(tmin, tmax, outlineColor, 0, 0, outlineThickness);
             return;
@@ -325,7 +277,7 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
 
         var points = sector.GetTriangle();
         var loopPoints = points.Select(
-            o=>(o.ToVector2() * Scale * 8 + MapPosition).ToNumerics()
+            o=>(o.ToVector2() * Window.Scale * 8 + Window.MapPosition).ToNumerics()
             ).ToArray();
         var vertex = loopPoints[^2];
         var armX = loopPoints[^2];
@@ -339,29 +291,10 @@ public class AiEditor(Track track) : TilemapWindow(track), IInspector
         drawlist.AddPolyline(ref loopPoints[0], loopPoints.Length, outlineColor, 0,
             outlineThickness);
 
-        var targetMin = ((sector.Target.ToVector2() - Vector2.One) * Scale * 8 + MapPosition).ToNumerics();
-        var target = ((sector.Target.ToVector2()) * Scale * 8 + MapPosition).ToNumerics();
-        var targetMax = ((sector.Target.ToVector2() + Vector2.One) * Scale * 8 + MapPosition).ToNumerics();
+        var targetMin = ((sector.Target.ToVector2() - Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
+        var target = ((sector.Target.ToVector2()) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
+        var targetMax = ((sector.Target.ToVector2() + Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
         drawlist.AddRectFilled(targetMin, targetMax, fillColor);
         drawlist.AddRect(targetMin,targetMax, outlineColor, 0, 0, outlineThickness);
-
-        // Vector2 mousePosition = ImGui.GetMousePos();
-        // switch (sector.Shape)
-        // {
-        //     case ZoneShape.TopLeft:
-        //         if (mousePosition.Y < vertex.Y && mousePosition.X < vertex.X)
-        //         {
-        //             drawlist.AddLine(target, armX, outlineColor, outlineThickness);
-        //             drawlist.AddLine(target, armY, outlineColor, outlineThickness);
-        //             break;
-        //         } else if (mousePosition.Y < vertex.Y || mousePosition.X < vertex.X)
-        //         {
-        //             drawlist.AddLine(target, armX, outlineColor, outlineThickness);
-        //         }
-        //
-        //         break;
-        //             
-        // }
-        
     }
 }

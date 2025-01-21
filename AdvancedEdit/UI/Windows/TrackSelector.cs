@@ -131,11 +131,10 @@ public class TrackSelector : UiWindow {
                             ImGui.PushID(track);
                             if (ImGui.Button(TracksList[track+(cup+page*(CupsList.Length/PagesList.Length))*TracksList.Length/CupsList.Length]))
                             {
-                                var t = AdvancedEdit.Instance.TrackManager.Tracks[
+                                var t = TrackManager.Tracks[
                                     TrackMapping[track+(cup+page*(CupsList.Length/PagesList.Length))*TracksList.Length/CupsList.Length]
                                 ];
-                                AdvancedEdit.Instance.UiManager.AddWindow(new MapEditor(t));
-                                AdvancedEdit.Instance.UiManager.AddWindow(new AiEditor(t));
+                                AdvancedEdit.Instance.UiManager.AddWindow(new TrackWindow(t));
                             }
                             ImGui.PopID();
                         }

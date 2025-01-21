@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using AdvancedEdit.Serialization.Types;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
+using AdvancedEdit.UI.Windows.Editors;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 
@@ -36,34 +37,37 @@ public class DrawAction : IUndoable
     }
 }
 
-public class Draw : MapEditorTool
+public class Draw : TilemapEditorTool
 {
     private bool _held = false;
     private DrawAction _drawAction;
+    public byte? ActiveTile = null;
     
-    public override void Update(MapEditor editor)
+
+    public override void Update(TilemapEditor editor)
     {
         Vector2 mousePosition = ImGui.GetMousePos();
         if (ImGui.IsItemHovered())
         {
-            Vector2 hoveredTile = editor.HoveredTile.ToVector2();
+            Vector2 hoveredTile = editor.Window.HoveredTile.ToVector2();
             hoveredTile = new Vector2((int)hoveredTile.X, (int)hoveredTile.Y);
-            Vector2 absoluteHoveredTile = editor.MapPosition + hoveredTile * (8 * editor.Scale);
+            Vector2 absoluteHoveredTile = editor.Window.MapPosition + hoveredTile * (8 * editor.Window.Scale);
 
-            if (editor.ActiveTile is not null)
+            if (ActiveTile is not null)
             {
-                byte tile = editor.ActiveTile.Value;
+                byte tile = ActiveTile.Value;
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 {
-                    if (!_held) _drawAction = new DrawAction(editor.Track);
+                    if (!_held) _drawAction = new DrawAction(editor.Window.Track);
                     if (!_drawAction.NewTiles.ContainsKey(new((int)hoveredTile.X, (int)hoveredTile.Y)))
                     {
-                        editor.Track.Tilemap.DrawTile(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
+                        editor.Window.Track.Tilemap.DrawTile(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
                         _drawAction.NewTiles.Add(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
                     }
 
                     _held = true;
-                } else if (_held)
+                }
+                else if (_held)
                 {
                     _held = false;
 
@@ -72,13 +76,12 @@ public class Draw : MapEditorTool
 
                 ImGui.SetCursorScreenPos(absoluteHoveredTile.ToNumerics());
                 ImGui.Image(
-                    editor.Track.Tileset.TexturePtr, 
-                    new(8* editor.Scale), 
-                    new(tile/256f, 0),
-                    new(tile/256f+1/256f, 1)
-                    );
+                    editor.Window.Track.Tileset.TexturePtr,
+                    new(8 * editor.Window.Scale),
+                    new(tile / 256f, 0),
+                    new(tile / 256f + 1 / 256f, 1)
+                );
             }
         }
-        
     }
 }

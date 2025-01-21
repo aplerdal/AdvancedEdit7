@@ -1,5 +1,6 @@
 using System;
 using AdvancedEdit.UI.Windows;
+using AdvancedEdit.UI.Windows.Editors;
 
 namespace AdvancedEdit.UI.Tools;
 
@@ -17,26 +18,7 @@ public abstract class MapTool
     public abstract void Update(TilemapWindow window);
 }
 
-public abstract class MapEditorTool : MapTool
+public abstract class TilemapEditorTool
 {
-    /// <summary>
-    /// Update and draw the tool
-    /// </summary>
-    /// <param name="window">The window the tool belongs to</param>
-    /// <exception cref="InvalidOperationException"></exception>
-    public override void Update(TilemapWindow window)
-    {
-        // Ensure the passed TilemapWindow is a MapEditor
-        if (window is MapEditor editor)
-        {
-            Update(editor);
-        }
-        else
-        {
-            throw new InvalidOperationException("Expected a MapEditor instance.");
-        }
-    }
-
-    // Abstract method specific to MapEditorTool
-    public abstract void Update(MapEditor editor);
+    public abstract void Update(TilemapEditor editor);
 }

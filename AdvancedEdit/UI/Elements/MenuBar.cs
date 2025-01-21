@@ -32,9 +32,8 @@ public static class MenuBar
                     if (status == NfdStatus.Ok)
                     {
                         AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(File.OpenRead(path)));
-                        var track = AdvancedEdit.Instance.TrackManager.Tracks[29];
-                        AdvancedEdit.Instance.UiManager.AddWindow(new MapEditor(track));
-                        AdvancedEdit.Instance.UiManager.AddWindow(new AiEditor(track));
+                        var track = TrackManager.Tracks[29];
+                        AdvancedEdit.Instance.UiManager.AddWindow(new TrackWindow(track));
                     }
                 }
 
