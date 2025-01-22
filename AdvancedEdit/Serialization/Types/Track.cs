@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using AdvancedEdit.Compression;
 using Microsoft.Xna.Framework;
 using Vector2 = System.Numerics.Vector2;
@@ -147,7 +148,7 @@ public class Track
                 {
                     var partAddress = tilesetAddress + offset;
                     reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
-                    byte[] data = Lz10.Decompress(reader, 0x4000000-partAddress).ToArray();
+                    byte[] data = Lz10.Decompress(reader).ToArray();
                     Array.Copy(data, 0, indicies, i*4096, 4096);
                 }
             }
@@ -156,7 +157,7 @@ public class Track
         else
         {
             reader.BaseStream.Seek(tilesetAddress, SeekOrigin.Begin);
-            byte[] data = Lz10.Decompress(reader, 0x4000000 - tilesetAddress).ToArray();
+            byte[] data = Lz10.Decompress(reader).ToArray();
             Tileset = new GameGfx(new(256 * 8, 8), data, tilePalette);
         }
         #endregion
@@ -176,7 +177,7 @@ public class Track
                     var partAddress = layoutAddress + offset;
                     
                     reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
-                    var data = Lz10.Decompress(reader, 0x4000000 - partAddress).ToArray();
+                    var data = Lz10.Decompress(reader).ToArray();
                     Array.Copy(data, 0, indicies, i*4096, 4096);
                 }
             }
@@ -186,7 +187,7 @@ public class Track
         else
         {
             reader.BaseStream.Seek(layoutAddress, SeekOrigin.Begin);
-            var data = Lz10.Decompress(reader, 0x4000000 - layoutAddress).ToArray();
+            var data = Lz10.Decompress(reader).ToArray();
             Tilemap = new Tilemap(Size, Tileset.Texture, data);
         }
         #endregion
@@ -215,5 +216,106 @@ public class Track
             AiSectors.Add(new AiSector(target, shape, rect, speed, intersection));
         }
         #endregion
+    }
+
+    public void Write(BinaryWriter writer, uint definition, uint header) {
+        writer.BaseStream.Seek(definition, SeekOrigin.Begin);
+        writer.Write(_trackId);
+        writer.Write(_backgroundId);
+        writer.Write(_backgroundBehavior);
+        writer.Write(_animation);
+        writer.Write(_material);
+        writer.Write(_turnInstructions);
+        writer.Write(_musicId);
+        writer.Write(_targetSetTable);
+        writer.Write(_tdUnknown);
+        // TODO: Read and write these correctly.
+        writer.Write(0u);
+        writer.Write(0u);
+        writer.Write(0u);
+        writer.Write(0u);
+        
+        const int headerSize = 0x100;
+        uint pos = headerSize;
+
+        #region Layout
+        uint layoutAddress;
+        byte[] tmp = new byte[Tilemap.Layout.GetLength(0) * Tilemap.Layout.GetLength(1)];
+        Buffer.BlockCopy(Tilemap.Layout, 0, tmp, 0, tmp.Length * sizeof(byte));
+        if (tmp.Length <= 4096) {
+            // We already wrote the flags, so this doesn't do anything atm. Maybe rewrite flags at end?
+            Flags &= ~TrackFlags.SplitLayout;
+            byte[] compressedLayout = Lz10.Compress(tmp);
+            layoutAddress = pos;
+            writer.BaseStream.Seek(definition + pos, SeekOrigin.Begin);
+            writer.Write(compressedLayout);
+            pos += (uint)compressedLayout.Length;
+        } else {
+            Flags |= TrackFlags.SplitLayout;
+            byte[][] parts = new byte[tmp.Length/4096][];
+            for (int i = 0; i < parts.Length; i++) {
+                parts[i] = Lz10.Compress(tmp[(i*4096)..((i+1)*4096)]);
+            }
+            writer.BaseStream.Seek(definition + pos, SeekOrigin.Begin);
+            ushort localPos = 0x20;
+            for (int i = 0; i < 16; i++) {
+                if (i < parts.Length) {
+                    writer.Write(localPos);
+                    localPos += (ushort)parts[i].Length;
+                }
+                else
+                    writer.Write((ushort)0);
+            }
+            pos += 0x20;
+            foreach(var part in parts) {
+                writer.Write(part);
+                pos+= (uint)part.Length;
+            }
+        }
+        #endregion
+        /*
+        #region Header
+        reader.BaseStream.Seek(header, SeekOrigin.Begin);
+        _magic = reader.ReadByte();
+        IsTilesetCompressed = reader.ReadBoolean();
+        reader.BaseStream.Seek(1, SeekOrigin.Current);
+        Flags = (TrackFlags)reader.ReadByte();
+        Size = new Point(reader.ReadByte()*128, reader.ReadByte()*128);
+        reader.BaseStream.Seek(42, SeekOrigin.Current);
+        ReusedTileset = reader.ReadUInt32();
+        reader.BaseStream.Seek(12, SeekOrigin.Current);
+        var layoutAddress = header+reader.ReadUInt32();
+        reader.BaseStream.Seek(60, SeekOrigin.Current);
+        var tilesetAddress = header + reader.ReadUInt32();
+        var paletteAddress = header + reader.ReadUInt32();
+        var behaviorAddress = header + reader.ReadUInt32();
+        var objectsAddress = header + reader.ReadUInt32();
+        var overlayAddress = header + reader.ReadUInt32();
+        var itemBoxAddress = header + reader.ReadUInt32();
+        var finishAddress = header + reader.ReadUInt32();
+        var unk1Address = header + reader.ReadUInt32();
+        reader.BaseStream.Seek(32, SeekOrigin.Current);
+        _trackRoutine = reader.ReadUInt32();
+        var minimapAddress = header + reader.ReadUInt32();
+        reader.ReadUInt32(); // unk battle stuff
+        var aiAddress = header + reader.ReadUInt32();
+        reader.BaseStream.Seek(20, SeekOrigin.Current);
+        var objectGfxAddress = header + reader.ReadUInt32();
+        var objectPaletteAddress = header + reader.ReadUInt32();
+        var reusedObject = reader.ReadUInt32();
+        #endregion
+        
+        */
+
+        writer.BaseStream.Seek(header, SeekOrigin.Begin);
+        writer.Write((byte)01);
+        writer.Write((byte)01);
+        writer.Seek(1, SeekOrigin.Current);
+        writer.Write((byte)Flags);
+        writer.Write((byte)(Size.X/128));
+        writer.Write((byte)(Size.Y/128));
+        writer.Seek(42, SeekOrigin.Current);
+        writer.Write(ReusedTileset);
+        writer.Seek(12, SeekOrigin.Current);
     }
 }
