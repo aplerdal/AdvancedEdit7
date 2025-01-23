@@ -33,6 +33,20 @@ public class Track
         set => _tileset = value;
     }
     public List<AiSector> AiSectors = new List<AiSector>(); // Linked list so rearranging and removing is faster
+
+    private GameGfx? _objectGfx;
+
+    public GameGfx ObjectGfx
+    {
+        get
+        {
+            if (_objectGfx is not null) return _objectGfx;
+            if (ReusedGameObjects == 0) throw new Exception("Object gfx null, not reused.");
+            return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ObjectGfx;
+        }
+        set => _objectGfx = value;
+    }
+    
     /// <summary>
     /// Track size in tiles
     /// </summary>
@@ -41,7 +55,7 @@ public class Track
     public TrackFlags Flags;
     public bool IsTilesetCompressed;
     public uint ReusedTileset;
-    public uint ReusedGameObject;
+    public uint ReusedGameObjects;
 
     // From track definition
     public GameGfx Name;
@@ -68,8 +82,8 @@ public class Track
     /// <param name="reader">a BinaryReader</param>
     /// <param name="id">The number of the track</param>
     /// <param name="definition">The track definition address</param>
-    /// <param name="header">The track header address</param>
-    public Track(BinaryReader reader, int id, uint definition, uint header)
+    /// <param name="headerAddress">The track header address</param>
+    public Track(BinaryReader reader, int id, uint definition, uint headerAddress)
     {
         Id = id;
         #region Definition
@@ -95,7 +109,7 @@ public class Track
         #endregion
         
         #region Header
-        reader.BaseStream.Seek(header, SeekOrigin.Begin);
+        reader.BaseStream.Seek(headerAddress, SeekOrigin.Begin);
         _magic = reader.ReadByte();
         IsTilesetCompressed = reader.ReadBoolean();
         reader.BaseStream.Seek(1, SeekOrigin.Current);
@@ -104,24 +118,24 @@ public class Track
         reader.BaseStream.Seek(42, SeekOrigin.Current);
         ReusedTileset = reader.ReadUInt32();
         reader.BaseStream.Seek(12, SeekOrigin.Current);
-        var layoutAddress = header+reader.ReadUInt32();
+        var layoutAddress = headerAddress+reader.ReadUInt32();
         reader.BaseStream.Seek(60, SeekOrigin.Current);
-        var tilesetAddress = header + reader.ReadUInt32();
-        var paletteAddress = header + reader.ReadUInt32();
-        var behaviorAddress = header + reader.ReadUInt32();
-        var objectsAddress = header + reader.ReadUInt32();
-        var overlayAddress = header + reader.ReadUInt32();
-        var itemBoxAddress = header + reader.ReadUInt32();
-        var finishAddress = header + reader.ReadUInt32();
-        var unk1Address = header + reader.ReadUInt32();
+        var tilesetAddress = headerAddress + reader.ReadUInt32();
+        var paletteAddress = headerAddress + reader.ReadUInt32();
+        var behaviorAddress = headerAddress + reader.ReadUInt32();
+        var objectsAddress = headerAddress + reader.ReadUInt32();
+        var overlayAddress = headerAddress + reader.ReadUInt32();
+        var itemBoxAddress = headerAddress + reader.ReadUInt32();
+        var finishAddress = headerAddress + reader.ReadUInt32();
+        var unk1Address = headerAddress + reader.ReadUInt32();
         reader.BaseStream.Seek(32, SeekOrigin.Current);
         _trackRoutine = reader.ReadUInt32();
-        var minimapAddress = header + reader.ReadUInt32();
+        var minimapAddress = headerAddress + reader.ReadUInt32();
         reader.ReadUInt32(); // unk battle stuff
-        var aiAddress = header + reader.ReadUInt32();
+        var aiAddress = headerAddress + reader.ReadUInt32();
         reader.BaseStream.Seek(20, SeekOrigin.Current);
-        var objectGfxAddress = header + reader.ReadUInt32();
-        var objectPaletteAddress = header + reader.ReadUInt32();
+        var objectGfxAddress = headerAddress + reader.ReadUInt32();
+        var objectPaletteAddress = headerAddress + reader.ReadUInt32();
         var reusedObject = reader.ReadUInt32();
         #endregion
         
@@ -152,13 +166,13 @@ public class Track
                     Array.Copy(data, 0, indicies, i*4096, 4096);
                 }
             }
-            Tileset = new GameGfx(new(256*8, 8), indicies, tilePalette);
+            Tileset = new GameGfx(indicies, tilePalette);
         }
         else
         {
             reader.BaseStream.Seek(tilesetAddress, SeekOrigin.Begin);
             byte[] data = Lz10.Decompress(reader).ToArray();
-            Tileset = new GameGfx(new(256 * 8, 8), data, tilePalette);
+            Tileset = new GameGfx(data, tilePalette);
         }
         #endregion
         
@@ -216,6 +230,55 @@ public class Track
             AiSectors.Add(new AiSector(target, shape, rect, speed, intersection));
         }
         #endregion
+
+        #region Load Object GFX
+
+        Color[] objectPalette = new Color[24];
+        if (paletteAddress == headerAddress)
+        {
+            reader.BaseStream.Seek(objectPaletteAddress, SeekOrigin.Begin);
+            for (int i = 0; i < 24; i++)
+                objectPalette[i] = new BgrColor(reader.ReadUInt16()).ToColor();
+        }
+        if (ReusedGameObjects != 0)
+        {
+            _objectGfx = null;
+        }
+        else
+        {
+            if (objectGfxAddress != headerAddress)
+            {
+                if (!Flags.HasFlag(TrackFlags.SplitObjects))
+                {
+                    reader.BaseStream.Seek(objectGfxAddress, SeekOrigin.Begin);
+                    var data = Lz10.Decompress(reader).ToArray();
+                    ObjectGfx = new GameGfx(data, objectPalette);
+                }
+                else
+                {
+                    long pos = objectGfxAddress;
+                    byte[] indicies = new byte[1024 * 2];
+                    for (int i = 0; i < 2; i++)
+                    {
+                        reader.BaseStream.Seek(pos, SeekOrigin.Begin);
+                        var offset = reader.ReadUInt16();
+                        pos += 2;
+                        if (offset != 0)
+                        {
+                            var partAddress = objectGfxAddress + offset;
+                            reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
+                            byte[] data = Lz10.Decompress(reader).ToArray();
+                            Array.Copy(data, 0, indicies, i * 1024, 1024);
+                        }
+                    }
+                    ObjectGfx = new GameGfx(indicies, objectPalette);
+                }
+            }
+        }
+
+        #endregion
+        
+        
     }
 
     public void Write(BinaryWriter writer, uint definition, uint header) {
