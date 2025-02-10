@@ -106,13 +106,15 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
 
     bool objectsLayer = true;
     bool positionsLayer = true;
-    bool 
+    bool boxesLayer = true;
     public override void DrawInspector()
     {
         ImGui.SeparatorText($"Object Editor");
 
         ImGui.SeparatorText("Layers");
-        ImGui.Checkbox()
+        ImGui.Checkbox("Objects", ref objectsLayer);
+        ImGui.Checkbox("Positions", ref positionsLayer);
+        ImGui.Checkbox("Boxes", ref boxesLayer);
 
         ImGui.SeparatorText("Properties");
         if (_selectedObject > -1) {
