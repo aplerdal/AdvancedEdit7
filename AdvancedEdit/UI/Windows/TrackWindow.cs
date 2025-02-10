@@ -1,8 +1,8 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using AdvancedEdit.Serialization.Types;
-using AdvancedEdit.UI.Windows.Editors;
+using AdvancedEdit.Serialization;
+using AdvancedEdit.UI.Editors;
 using ImGuiNET;
 
 namespace AdvancedEdit.UI.Windows;
@@ -16,7 +16,7 @@ public class TrackWindow : TilemapWindow, IInspector
 
     public TrackWindow(Track track) : base(track)
     {
-        _editors = [new TilemapEditor(this), new AiEditor(this)]; // Default editors
+        _editors = [new TilemapEditor(this), new AiEditor(this), new ObjectEditor(this)]; // Default editors
     }
 
     public override void Draw(bool hasFocus)

@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.Serialization;
+using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
-using AdvancedEdit.UI.Windows.Editors;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 

@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 
-namespace AdvancedEdit.Serialization.Types;
+namespace AdvancedEdit.Serialization;
 
 public struct BgrColor(ushort raw)
 {

@@ -1,6 +1,6 @@
 using System;
 using System.IO;
-using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.Serialization;
 using ImGuiNET;
 
 namespace AdvancedEdit.UI.Windows;

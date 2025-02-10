@@ -1,6 +1,6 @@
 using System;
+using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Windows;
-using AdvancedEdit.UI.Windows.Editors;
 
 namespace AdvancedEdit.UI.Tools;
 

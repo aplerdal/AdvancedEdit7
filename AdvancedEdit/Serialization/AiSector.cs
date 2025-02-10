@@ -1,15 +1,9 @@
 using System;
-using System.ComponentModel;
-using System.Drawing;
-using System.Linq;
-using AdvancedEdit.UI.Tools;
-using AdvancedEdit.UI.Windows;
-using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Point = Microsoft.Xna.Framework.Point;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
 
-namespace AdvancedEdit.Serialization.Types;
+namespace AdvancedEdit.Serialization;
 
 public enum ZoneShape
 {

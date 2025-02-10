@@ -1,15 +1,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Undo;
+using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
-namespace AdvancedEdit.UI.Windows.Editors;
+namespace AdvancedEdit.UI.Editors;
 
-public struct Drag : IUndoable
+public struct AiDrag : IUndoable
 {
     public int SectorNumber;
     public HoverPart Part;
@@ -19,7 +20,7 @@ public struct Drag : IUndoable
     private AiSector _new = null;
     private readonly List<AiSector> _sectors;
 
-    public Drag(List<AiSector> sectors, int sectorNumber)
+    public AiDrag(List<AiSector> sectors, int sectorNumber)
     {
         _sectors = sectors;
         Original = new(sectors[sectorNumber]);
@@ -45,7 +46,7 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
     private bool _dragging;
     private int _selectedSector = -1;
 
-    private Drag _drag = new();
+    private AiDrag _drag = new();
 
     public override string Name => "Ai Editor";
     public override string Id => "aieditor";
@@ -112,7 +113,7 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
             {
                 if (!_dragging)
                 {
-                    _drag = new Drag(Window.Track.AiSectors, hoveredIndex);
+                    _drag = new AiDrag(Window.Track.AiSectors, hoveredIndex);
                     _drag.Part = hovered;
                     _drag.Handle = handle;
                     _drag.LastPosition = new Point(Window.HoveredTile.X/2, Window.HoveredTile.Y/2);
@@ -141,19 +142,16 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
                 _selectedSector = -1;
             }
         }
-        else if (!ImGui.IsMouseDown(ImGuiMouseButton.Left))
+        else if (_dragging)
         {
-            if (_dragging)
+            _dragging = false;
+            if (_drag.Original == Window.Track.AiSectors[_drag.SectorNumber])
             {
-                _dragging = false;
-                if (_drag.Original == Window.Track.AiSectors[_drag.SectorNumber])
-                {
-                    _selectedSector = _drag.SectorNumber;
-                }
-                else
-                {
-                    UndoManager.Do(_drag);
-                }
+                _selectedSector = _drag.SectorNumber;
+            }
+            else
+            {
+                UndoManager.Do(_drag);
             }
         }
 
@@ -165,8 +163,8 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
             if (tab){
                 var halfTextSize = ImGui.CalcTextSize(i.ToString())/2;
                 var center = sector.Center * Window.Scale * 8 + Window.MapPosition;
-                ImGui.GetWindowDrawList().AddRectFilled(((center - halfTextSize)).ToNumerics(), (center + halfTextSize).ToNumerics(), 0x80404040);
-                ImGui.GetWindowDrawList().AddText(((center - halfTextSize)).ToNumerics(), 0xffffffff, $"{i}");
+                ImGui.GetWindowDrawList().AddRectFilled((center - halfTextSize).ToNumerics(), (center + halfTextSize).ToNumerics(), 0x80404040);
+                ImGui.GetWindowDrawList().AddText((center - halfTextSize).ToNumerics(), 0xffffffff, $"{i}");
             }
         }
     }
@@ -258,27 +256,25 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
         var drawlist = ImGui.GetWindowDrawList();
         var fillColor = hovered | selected ? HoverZoneColors[sector.Speed] : FillZoneColors[sector.Speed];
         var outlineColor = selected ? 0xffffffff : SolidZoneColors[sector.Speed];
-        float outlineThickness = hovered | selected ? 3f : 1f;
+        var outlineThickness = hovered | selected ? 3f : 1f;
         if (sector.Shape == ZoneShape.Rectangle)
         {
             var rect = sector.Zone;
-            var min = rect.Location.ToVector2().ToNumerics() * Window.Scale * 8 + Window.MapPosition.ToNumerics();
-            var max = (rect.Location + rect.Size).ToVector2().ToNumerics() * Window.Scale * 8 + Window.MapPosition.ToNumerics();
+            var min = Window.TileToWindow(rect.Location);
+            var max = Window.TileToWindow(rect.Location + rect.Size);
             drawlist.AddRectFilled(min, max, fillColor);
             drawlist.AddRect(min, max, outlineColor, 0, 0, outlineThickness);
 
-            var tmin = ((sector.Target.ToVector2() - Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
-            var tget = ((sector.Target.ToVector2()) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
-            var tmax = ((sector.Target.ToVector2() + Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
+            var tmin = Window.TileToWindow(sector.Target - new Point(1));
+            var tget = Window.TileToWindow(sector.Target);
+            var tmax = Window.TileToWindow(sector.Target + new Point(1));
             drawlist.AddRectFilled(tmin, tmax, fillColor);
             drawlist.AddRect(tmin, tmax, outlineColor, 0, 0, outlineThickness);
             return;
         }
 
         var points = sector.GetTriangle();
-        var loopPoints = points.Select(
-            o=>(o.ToVector2() * Window.Scale * 8 + Window.MapPosition).ToNumerics()
-            ).ToArray();
+        var loopPoints = points.Select(o=>Window.TileToWindow(o)).ToArray();
         var vertex = loopPoints[^2];
         var armX = loopPoints[^2];
         var armY = loopPoints[^3];
@@ -291,9 +287,8 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
         drawlist.AddPolyline(ref loopPoints[0], loopPoints.Length, outlineColor, 0,
             outlineThickness);
 
-        var targetMin = ((sector.Target.ToVector2() - Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
-        var target = ((sector.Target.ToVector2()) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
-        var targetMax = ((sector.Target.ToVector2() + Vector2.One) * Window.Scale * 8 + Window.MapPosition).ToNumerics();
+        var targetMin = Window.TileToWindow(sector.Target - new Point(1));
+        var targetMax = Window.TileToWindow(sector.Target + new Point(1));
         drawlist.AddRectFilled(targetMin, targetMax, fillColor);
         drawlist.AddRect(targetMin,targetMax, outlineColor, 0, 0, outlineThickness);
     }

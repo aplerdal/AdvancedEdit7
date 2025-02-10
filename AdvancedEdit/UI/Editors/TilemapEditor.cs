@@ -1,11 +1,11 @@
 using System;
 using AdvancedEdit.UI.Tools;
-using AdvancedEdit.UI.Undo;
+using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace AdvancedEdit.UI.Windows.Editors;
+namespace AdvancedEdit.UI.Editors;
 
 public class TilemapEditor : TrackEditor
 {

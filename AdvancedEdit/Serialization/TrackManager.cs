@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
 using System.IO;
 
-namespace AdvancedEdit.Serialization.Types;
+namespace AdvancedEdit.Serialization;
 
 public class TrackManager {
     public const int TrackCount = 49;

@@ -1,6 +1,7 @@
 using AdvancedEdit.UI.Undo;
+using AdvancedEdit.UI.Windows;
 
-namespace AdvancedEdit.UI.Windows.Editors;
+namespace AdvancedEdit.UI.Editors;
 
 /// <summary>
 /// Base class for all the editor types that will be used. Tilemap editor, Ai editor, &c. &c.

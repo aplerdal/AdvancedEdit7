@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
-using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using NativeFileDialogs.Net;

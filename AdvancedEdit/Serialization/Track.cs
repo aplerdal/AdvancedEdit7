@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using AdvancedEdit.Compression;
 using Microsoft.Xna.Framework;
 using Vector2 = System.Numerics.Vector2;
 
-namespace AdvancedEdit.Serialization.Types;
+namespace AdvancedEdit.Serialization;
 
 [Flags]
 public enum TrackFlags
@@ -18,10 +17,11 @@ public enum TrackFlags
 public class Track
 {
     public int Id;
+    
     // From track header
     public Tilemap Tilemap;
+    
     private GameGfx? _tileset;
-
     public GameGfx Tileset
     {
         get
@@ -35,7 +35,6 @@ public class Track
     public List<AiSector> AiSectors = new List<AiSector>(); // Linked list so rearranging and removing is faster
 
     private GameGfx? _objectGfx;
-
     public GameGfx ObjectGfx
     {
         get
@@ -51,11 +50,15 @@ public class Track
     /// Track size in tiles
     /// </summary>
     public Point Size;
-    public GameGfx Minimap;
     public TrackFlags Flags;
+    
     public bool IsTilesetCompressed;
     public uint ReusedTileset;
     public uint ReusedGameObjects;
+    public byte[] Behaviors;
+    public List<GameObject> Objects = new List<GameObject>();
+    public List<GameObject> ItemBoxes = new List<GameObject>();
+    public List<Point> Overlay = new List<Point>();
 
     // From track definition
     public GameGfx Name;
@@ -277,8 +280,57 @@ public class Track
         }
 
         #endregion
-        
-        
+
+        #region Load Objects
+
+        if (objectsAddress != headerAddress)
+        {
+            reader.BaseStream.Seek(objectsAddress, SeekOrigin.Begin);
+            while (true)
+            {
+                var objId = reader.ReadByte();
+                if (objId == 0) return;
+                Objects.Add(new(objId, new(reader.ReadByte(), reader.ReadByte()), reader.ReadByte()));
+            }
+        }
+
+        #endregion
+
+        #region Load Item Boxes
+        // Haven't checked how these work at all. I guess I will assume they work like objects until it crashes
+        if (itemBoxAddress != headerAddress)
+        {
+            reader.BaseStream.Seek(itemBoxAddress, SeekOrigin.Begin);
+            while (true)
+            {
+                var boxId = reader.ReadByte();
+                if (boxId == 0) return;
+                ItemBoxes.Add(new(boxId, new(reader.ReadByte(), reader.ReadByte()), reader.ReadByte()));
+            }
+        }
+        #endregion
+
+        #region Load Behaviors
+
+        reader.BaseStream.Seek(itemBoxAddress, SeekOrigin.Begin);
+        Behaviors = reader.ReadBytes(256);
+
+        #endregion
+
+        #region Load Overlay
+
+        if (overlayAddress != headerAddress)
+        {
+            reader.BaseStream.Seek(overlayAddress, SeekOrigin.Begin);
+            while (true)
+            {
+                if (reader.ReadByte() == 0) return;
+                Overlay.Add(new Point(reader.ReadByte(), reader.ReadByte()));
+                reader.ReadByte();
+            }
+        }
+
+        #endregion
     }
 
     public void Write(BinaryWriter writer, uint definition, uint header) {
@@ -306,7 +358,6 @@ public class Track
         byte[] tmp = new byte[Tilemap.Layout.GetLength(0) * Tilemap.Layout.GetLength(1)];
         Buffer.BlockCopy(Tilemap.Layout, 0, tmp, 0, tmp.Length * sizeof(byte));
         if (tmp.Length <= 4096) {
-            // We already wrote the flags, so this doesn't do anything atm. Maybe rewrite flags at end?
             Flags &= ~TrackFlags.SplitLayout;
             byte[] compressedLayout = Lz10.Compress(tmp);
             layoutAddress = pos;
@@ -336,39 +387,6 @@ public class Track
             }
         }
         #endregion
-        /*
-        #region Header
-        reader.BaseStream.Seek(header, SeekOrigin.Begin);
-        _magic = reader.ReadByte();
-        IsTilesetCompressed = reader.ReadBoolean();
-        reader.BaseStream.Seek(1, SeekOrigin.Current);
-        Flags = (TrackFlags)reader.ReadByte();
-        Size = new Point(reader.ReadByte()*128, reader.ReadByte()*128);
-        reader.BaseStream.Seek(42, SeekOrigin.Current);
-        ReusedTileset = reader.ReadUInt32();
-        reader.BaseStream.Seek(12, SeekOrigin.Current);
-        var layoutAddress = header+reader.ReadUInt32();
-        reader.BaseStream.Seek(60, SeekOrigin.Current);
-        var tilesetAddress = header + reader.ReadUInt32();
-        var paletteAddress = header + reader.ReadUInt32();
-        var behaviorAddress = header + reader.ReadUInt32();
-        var objectsAddress = header + reader.ReadUInt32();
-        var overlayAddress = header + reader.ReadUInt32();
-        var itemBoxAddress = header + reader.ReadUInt32();
-        var finishAddress = header + reader.ReadUInt32();
-        var unk1Address = header + reader.ReadUInt32();
-        reader.BaseStream.Seek(32, SeekOrigin.Current);
-        _trackRoutine = reader.ReadUInt32();
-        var minimapAddress = header + reader.ReadUInt32();
-        reader.ReadUInt32(); // unk battle stuff
-        var aiAddress = header + reader.ReadUInt32();
-        reader.BaseStream.Seek(20, SeekOrigin.Current);
-        var objectGfxAddress = header + reader.ReadUInt32();
-        var objectPaletteAddress = header + reader.ReadUInt32();
-        var reusedObject = reader.ReadUInt32();
-        #endregion
-        
-        */
 
         writer.BaseStream.Seek(header, SeekOrigin.Begin);
         writer.Write((byte)01);

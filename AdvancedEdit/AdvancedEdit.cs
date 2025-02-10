@@ -1,6 +1,6 @@
 ﻿using System;
 using System.IO;
-using AdvancedEdit.Serialization.Types;
+using AdvancedEdit.Serialization;
 using AdvancedEdit.UI;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
