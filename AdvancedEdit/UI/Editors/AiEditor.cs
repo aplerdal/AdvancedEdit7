@@ -178,13 +178,10 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
             int temp = 0;
             bool tempBool = false;
             ImGui.Combo("Shape", ref temp, ["Rectangle"], 1);
-            ImGui.SameLine();
             HelpMarker("Sets shape of the zone. The direction on triangles refers to the right angle position.");
             ImGui.InputInt("Speed", ref temp);
-            ImGui.SameLine();
             HelpMarker("Sets the speed the AI will move through the zone from 0(slowest) to 3(fastest).");
             ImGui.Checkbox("Intersection", ref tempBool);
-            ImGui.SameLine();
             HelpMarker("Determines if the element is at an intersection. When an AI element is flagged as an intersection, this tells the AI to ignore the intersected AI zones, and avoids track object display issues when switching zones.");
             ImGui.EndDisabled();
         }
@@ -232,18 +229,6 @@ public class AiEditor(TilemapWindow window) : TrackEditor(window)
         if (ImGui.Button("Delete Sector") || ImGui.IsKeyPressed(ImGuiKey.Delete)){
             Window.Track.AiSectors.RemoveAt(_selectedSector);
             _selectedSector = Math.Clamp(_selectedSector, 0, Window.Track.AiSectors.Count - 1);
-        }
-    }
-
-    private static void HelpMarker(string desc)
-    {
-        ImGui.TextDisabled("(?)");
-        if (ImGui.BeginItemTooltip())
-        {
-            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35f);
-            ImGui.TextUnformatted(desc);
-            ImGui.PopTextWrapPos();
-            ImGui.EndTooltip();
         }
     }
 

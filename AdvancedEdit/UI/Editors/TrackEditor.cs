@@ -1,6 +1,6 @@
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
-
+using ImGuiNET;
 namespace AdvancedEdit.UI.Editors;
 
 /// <summary>
@@ -18,4 +18,17 @@ public abstract class TrackEditor(TilemapWindow window) : IInspector
     public abstract void Update(bool hasFocus);
 
     public abstract void DrawInspector();
+
+    protected static void HelpMarker(string desc)
+    {
+        ImGui.SameLine();
+        ImGui.TextDisabled("(?)");
+        if (ImGui.BeginItemTooltip())
+        {
+            ImGui.PushTextWrapPos(ImGui.GetFontSize() * 35f);
+            ImGui.TextUnformatted(desc);
+            ImGui.PopTextWrapPos();
+            ImGui.EndTooltip();
+        }
+    }
 }

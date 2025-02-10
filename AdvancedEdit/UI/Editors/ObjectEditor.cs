@@ -76,8 +76,11 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
                 }
             }
         }
-
         if (!newHover) _hoveredIndex = -1;
+
+        if (_hoveredIndex == -1 && ImGui.IsMouseDown(ImGuiMouseButton.Left) && ! _dragging){
+            _selectedObject = -1;
+        }
 
         if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _dragging)
         {
@@ -101,8 +104,50 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
         }
     }
 
+    bool objectsLayer = true;
+    bool positionsLayer = true;
+    bool 
     public override void DrawInspector()
     {
         ImGui.SeparatorText($"Object Editor");
+
+        ImGui.SeparatorText("Layers");
+        ImGui.Checkbox()
+
+        ImGui.SeparatorText("Properties");
+        if (_selectedObject > -1) {
+            var obj = Window.Track.Objects[_selectedObject];
+            int id = obj.Id & 0b01111111;
+            ImGui.InputInt("ID: ", ref id);
+            id &= 0b01111111;
+            HelpMarker("Changes the id of the object. If you are using a object from a different track it is recommended to make this object global.");
+            ImGui.CheckboxFlags("Global Object: ", ref id, 0x80);
+            HelpMarker("Changes object to global table. Allows access to all objects from other tracks. For a full list of global objects check (TODO)");
+
+            ImGui.SeparatorText("Object List");
+            if (ImGui.Button("Add Object")) {
+                Window.Track.Objects.Add(new GameObject(2, new Point(64,64), 0));
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Duplicate Object") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D)){
+                var gameobj = (GameObject)Window.Track.Objects[_selectedObject].Clone();
+                gameobj.Position += new Point(2);
+                Window.Track.Objects.Add(gameobj);
+                _selectedObject = Window.Track.Objects.Count-1;
+            }
+            ImGui.SameLine();
+            if (ImGui.Button("Delete Object") || ImGui.IsKeyPressed(ImGuiKey.Delete)){
+                Window.Track.AiSectors.RemoveAt(_selectedObject);
+                _selectedObject = -1;
+            }
+        } else {
+            ImGui.BeginDisabled();
+            var i = 0;
+            ImGui.InputInt("ID: ", ref i);
+            HelpMarker(" ");
+            ImGui.CheckboxFlags("Global Object: ", ref i, 0x80);
+            HelpMarker(" ");
+            ImGui.EndDisabled();
+        }
     }
 }
