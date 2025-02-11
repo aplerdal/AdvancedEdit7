@@ -12,7 +12,7 @@ public enum TrackFlags
 {
     SplitTileset = 1,
     SplitLayout = 2,
-    SplitObjects = 4,
+    SplitActorGfx = 4,
 }
 public class Track
 {
@@ -34,16 +34,16 @@ public class Track
     }
     public List<AiSector> AiSectors = new List<AiSector>(); // Linked list so rearranging and removing is faster
 
-    private GameGfx? _objectGfx;
-    public GameGfx ObjectGfx
+    private GameGfx? _actorGfx;
+    public GameGfx ActorGfx
     {
         get
         {
-            if (_objectGfx is not null) return _objectGfx;
-            if (ReusedGameObjects == 0) throw new Exception("Object gfx null, not reused.");
-            return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ObjectGfx;
+            if (_actorGfx is not null) return _actorGfx;
+            if (ReusedActorGfx == 0) throw new Exception("Actor gfx null, not reused.");
+            return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ActorGfx;
         }
-        set => _objectGfx = value;
+        set => _actorGfx = value;
     }
     
     /// <summary>
@@ -54,9 +54,10 @@ public class Track
     
     public bool IsTilesetCompressed;
     public uint ReusedTileset;
-    public uint ReusedGameObjects;
+    public uint ReusedActorGfx;
     public byte[] Behaviors;
-    public List<GameObject> Objects = new List<GameObject>();
+    public List<GameObject> Actors = new List<GameObject>();
+    public List<GameObject> Positions = new List<GameObject>();
     public List<GameObject> ItemBoxes = new List<GameObject>();
     public List<Point> Overlay = new List<Point>();
 
@@ -126,10 +127,10 @@ public class Track
         var tilesetAddress = headerAddress + reader.ReadUInt32();
         var paletteAddress = headerAddress + reader.ReadUInt32();
         var behaviorAddress = headerAddress + reader.ReadUInt32();
-        var objectsAddress = headerAddress + reader.ReadUInt32();
+        var actorsAddress = headerAddress + reader.ReadUInt32();
         var overlayAddress = headerAddress + reader.ReadUInt32();
         var itemBoxAddress = headerAddress + reader.ReadUInt32();
-        var finishAddress = headerAddress + reader.ReadUInt32();
+        var positionsAddress = headerAddress + reader.ReadUInt32();
         var unk1Address = headerAddress + reader.ReadUInt32();
         reader.BaseStream.Seek(32, SeekOrigin.Current);
         _trackRoutine = reader.ReadUInt32();
@@ -137,9 +138,9 @@ public class Track
         reader.ReadUInt32(); // unk battle stuff
         var aiAddress = headerAddress + reader.ReadUInt32();
         reader.BaseStream.Seek(20, SeekOrigin.Current);
-        var objectGfxAddress = headerAddress + reader.ReadUInt32();
-        var objectPaletteAddress = headerAddress + reader.ReadUInt32();
-        var reusedObject = reader.ReadUInt32();
+        var actorGfxAddress = headerAddress + reader.ReadUInt32();
+        var actorPaletteAddress = headerAddress + reader.ReadUInt32();
+        ReusedActorGfx = reader.ReadUInt32();
         #endregion
         
         #region Load Tileset
@@ -234,32 +235,32 @@ public class Track
         }
         #endregion
 
-        #region Load Object GFX
+        #region Load Actor GFX
 
-        Color[] objectPalette = new Color[24];
+        Color[] actorPalette = new Color[24];
         if (paletteAddress == headerAddress)
         {
-            reader.BaseStream.Seek(objectPaletteAddress, SeekOrigin.Begin);
+            reader.BaseStream.Seek(actorPaletteAddress, SeekOrigin.Begin);
             for (int i = 0; i < 24; i++)
-                objectPalette[i] = new BgrColor(reader.ReadUInt16()).ToColor();
+                actorPalette[i] = new BgrColor(reader.ReadUInt16()).ToColor();
         }
-        if (ReusedGameObjects != 0)
+        if (ReusedActorGfx != 0)
         {
-            _objectGfx = null;
+            _actorGfx = null;
         }
         else
         {
-            if (objectGfxAddress != headerAddress)
+            if (actorGfxAddress != headerAddress)
             {
-                if (!Flags.HasFlag(TrackFlags.SplitObjects))
+                if (!Flags.HasFlag(TrackFlags.SplitActorGfx))
                 {
-                    reader.BaseStream.Seek(objectGfxAddress, SeekOrigin.Begin);
+                    reader.BaseStream.Seek(actorGfxAddress, SeekOrigin.Begin);
                     var data = Lz10.Decompress(reader).ToArray();
-                    ObjectGfx = new GameGfx(data, objectPalette);
+                    ActorGfx = new GameGfx(data, actorPalette);
                 }
                 else
                 {
-                    long pos = objectGfxAddress;
+                    long pos = actorGfxAddress;
                     byte[] indicies = new byte[1024 * 2];
                     for (int i = 0; i < 2; i++)
                     {
@@ -268,36 +269,35 @@ public class Track
                         pos += 2;
                         if (offset != 0)
                         {
-                            var partAddress = objectGfxAddress + offset;
+                            var partAddress = actorGfxAddress + offset;
                             reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
                             byte[] data = Lz10.Decompress(reader).ToArray();
                             Array.Copy(data, 0, indicies, i * 1024, 1024);
                         }
                     }
-                    ObjectGfx = new GameGfx(indicies, objectPalette);
+                    ActorGfx = new GameGfx(indicies, actorPalette);
                 }
             }
         }
 
         #endregion
 
-        #region Load Objects
+        #region Load Actors
 
-        if (objectsAddress != headerAddress)
+        if (actorsAddress != headerAddress)
         {
-            reader.BaseStream.Seek(objectsAddress, SeekOrigin.Begin);
+            reader.BaseStream.Seek(actorsAddress, SeekOrigin.Begin);
             while (true)
             {
                 var objId = reader.ReadByte();
                 if (objId == 0) return;
-                Objects.Add(new(objId, new(reader.ReadByte(), reader.ReadByte()), reader.ReadByte()));
+                Actors.Add(new(objId, new(reader.ReadByte(), reader.ReadByte()), reader.ReadByte()));
             }
         }
 
         #endregion
 
         #region Load Item Boxes
-        // Haven't checked how these work at all. I guess I will assume they work like objects until it crashes
         if (itemBoxAddress != headerAddress)
         {
             reader.BaseStream.Seek(itemBoxAddress, SeekOrigin.Begin);
@@ -309,7 +309,7 @@ public class Track
             }
         }
         #endregion
-
+        
         #region Load Behaviors
 
         reader.BaseStream.Seek(itemBoxAddress, SeekOrigin.Begin);

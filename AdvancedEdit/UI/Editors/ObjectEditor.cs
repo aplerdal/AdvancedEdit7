@@ -9,6 +9,7 @@ namespace AdvancedEdit.UI.Editors;
 
 public struct ObjDrag : IUndoable
 {
+    public int ObjectType;
     public int ObjectNumber;
     public HoverPart Part;
     public ResizeHandle Handle;
@@ -36,10 +37,15 @@ public struct ObjDrag : IUndoable
         _objects[ObjectNumber] = Original;
     }
 }
-
+enum ObjectType {
+    Actor,
+    Positions,
+    Boxes,
+}
 public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
 {
     private bool _dragging;
+    private ObjectType _selectedType = ObjectType.Actor;
     private int _selectedObject = -1;
     private int _hoveredIndex = -1;
 
@@ -49,15 +55,24 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
     
     public override void Update(bool hasFocus)
     {
+        for (int i = 0; i < Window.Track.Actors.Count; i++){
+
+        }
+        for (int i = 0; i < Window.Track.ItemBoxes.Count; i++) {
+            
+        }
+    }
+    private void UpdateActors(){
+        bool newHover = false;
         if (_dragging)
         {
             _hoveredIndex = _drag.ObjectNumber;
+            newHover = true;
         }
 
-        bool newHover = false;
-        for (var i = 0; i < Window.Track.Objects.Count; i++)
+        for (var i = 0; i < Window.Track.Actors.Count; i++)
         {
-            var gameObject = Window.Track.Objects[i];
+            var gameObject = Window.Track.Actors[i];
             ImGui.GetWindowDrawList().AddCircleFilled(Window.TileToWindow(gameObject.Position), 4 * Window.Scale,
                 Color.WhiteSmoke.PackedValue);
             if (Window.Rectangle(gameObject.Position + new Point(-2, -4), gameObject.Position + new Point(2, 0),
@@ -69,7 +84,7 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
                     _hoveredIndex = i;
                     if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && !_dragging && ImGui.IsWindowHovered())
                     {
-                        _drag = new ObjDrag(Window.Track.Objects, i);
+                        _drag = new ObjDrag(Window.Track.Actors, i);
                         _dragging = true;
                         _drag.LastPosition = Window.HoveredTile;
                     }
@@ -87,13 +102,13 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
             var delta = Window.HoveredTile - _drag.LastPosition;
             _drag.LastPosition = Window.HoveredTile;
 
-            Window.Track.Objects[_drag.ObjectNumber].Position += delta;
+            Window.Track.Actors[_drag.ObjectNumber].Position += delta;
         }
 
         if (_dragging && !ImGui.IsMouseDown(ImGuiMouseButton.Left))
         {
             _dragging = false;
-            if (_drag.Original.Position == Window.Track.Objects[_drag.ObjectNumber].Position)
+            if (_drag.Original.Position == Window.Track.Actors[_drag.ObjectNumber].Position)
             {
                 _selectedObject = _drag.ObjectNumber;
             }
@@ -104,7 +119,7 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
         }
     }
 
-    bool objectsLayer = true;
+    bool actorsLayer = true;
     bool positionsLayer = true;
     bool boxesLayer = true;
     public override void DrawInspector()
@@ -112,13 +127,13 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
         ImGui.SeparatorText($"Object Editor");
 
         ImGui.SeparatorText("Layers");
-        ImGui.Checkbox("Objects", ref objectsLayer);
+        ImGui.Checkbox("Objects", ref actorsLayer);
         ImGui.Checkbox("Positions", ref positionsLayer);
         ImGui.Checkbox("Boxes", ref boxesLayer);
 
         ImGui.SeparatorText("Properties");
         if (_selectedObject > -1) {
-            var obj = Window.Track.Objects[_selectedObject];
+            var obj = Window.Track.Actors[_selectedObject];
             int id = obj.Id & 0b01111111;
             ImGui.InputInt("ID: ", ref id);
             id &= 0b01111111;
@@ -128,14 +143,14 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
 
             ImGui.SeparatorText("Object List");
             if (ImGui.Button("Add Object")) {
-                Window.Track.Objects.Add(new GameObject(2, new Point(64,64), 0));
+                Window.Track.Actors.Add(new GameObject(2, new Point(64,64), 0));
             }
             ImGui.SameLine();
             if (ImGui.Button("Duplicate Object") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D)){
-                var gameobj = (GameObject)Window.Track.Objects[_selectedObject].Clone();
+                var gameobj = (GameObject)Window.Track.Actors[_selectedObject].Clone();
                 gameobj.Position += new Point(2);
-                Window.Track.Objects.Add(gameobj);
-                _selectedObject = Window.Track.Objects.Count-1;
+                Window.Track.Actors.Add(gameobj);
+                _selectedObject = Window.Track.Actors.Count-1;
             }
             ImGui.SameLine();
             if (ImGui.Button("Delete Object") || ImGui.IsKeyPressed(ImGuiKey.Delete)){
