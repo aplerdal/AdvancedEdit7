@@ -39,11 +39,9 @@ public class DrawAction : IUndoable
 
 public class Draw : TilemapEditorTool
 {
-    private bool _held = false;
-    private DrawAction _drawAction;
+    private DrawAction? _drawAction;
     public byte? ActiveTile = null;
     
-
     public override void Update(TilemapEditor editor)
     {
         Vector2 mousePosition = ImGui.GetMousePos();
@@ -58,20 +56,20 @@ public class Draw : TilemapEditorTool
                 byte tile = ActiveTile.Value;
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
                 {
-                    if (!_held) _drawAction = new DrawAction(editor.Window.Track);
-                    if (!_drawAction.NewTiles.ContainsKey(new((int)hoveredTile.X, (int)hoveredTile.Y)))
-                    {
-                        editor.Window.Track.Tilemap.DrawTile(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
-                        _drawAction.NewTiles.Add(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
+                    if (_drawAction is null) {
+                        _drawAction = new DrawAction(editor.Window.Track);
+                    } else {
+                        if (!_drawAction.NewTiles.ContainsKey(new((int)hoveredTile.X, (int)hoveredTile.Y)))
+                        {
+                            editor.Window.Track.Tilemap.DrawTile(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
+                            _drawAction.NewTiles.Add(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
+                        }
                     }
-
-                    _held = true;
                 }
-                else if (_held)
+                else if (_drawAction is not null)
                 {
-                    _held = false;
-
                     editor.UndoManager.Do(_drawAction);
+                    _drawAction = null;
                 }
 
                 ImGui.SetCursorScreenPos(absoluteHoveredTile.ToNumerics());

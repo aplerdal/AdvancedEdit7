@@ -70,7 +70,6 @@ public class TrackWindow : TilemapWindow, IInspector
             _activeEditor = -1;
             for (var i = 0; i < list.Count; i++)
             {
-                bool open = true;
                 var editor = list[i];
                 if (ImGui.BeginTabItem(editor.Name))
                 {

@@ -16,8 +16,8 @@ public struct AiDrag : IUndoable
     public HoverPart Part;
     public ResizeHandle Handle;
     public Point LastPosition;
-    public AiSector Original = null;
-    private AiSector _new = null;
+    public AiSector Original;
+    private AiSector? _new = null;
     private readonly List<AiSector> _sectors;
 
     public AiDrag(List<AiSector> sectors, int sectorNumber)

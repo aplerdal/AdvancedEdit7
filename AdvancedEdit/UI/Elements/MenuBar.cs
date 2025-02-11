@@ -29,7 +29,7 @@ public static class MenuBar
                 {
                     string? path;
                     var status = NativeFileDialogs.Net.Nfd.OpenDialog(out path, RomFilter, null);
-                    if (status == NfdStatus.Ok)
+                    if (status == NfdStatus.Ok && path is not null)
                     {
                         AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(File.OpenRead(path)));
                         var track = TrackManager.Tracks[29];

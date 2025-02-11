@@ -7,10 +7,9 @@ namespace AdvancedEdit.UI;
 
 public class UiManager
 {
-    private int _windowId = 0;
     LinkedList<UiWindow> _windows = new();
     private Dictionary<string, int> Ids = new();
-    private UiWindow _focused = null;
+    private UiWindow? _focused = null;
 
     /// <summary>
     /// Render and handle input for all windows from the current window list;

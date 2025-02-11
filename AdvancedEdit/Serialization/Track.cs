@@ -62,8 +62,8 @@ public class Track
     public List<Point> Overlay = new List<Point>();
 
     // From track definition
-    public GameGfx Name;
-    public GameGfx Cover;
+    // public GameGfx Name;
+    // public GameGfx Cover;
     public uint Laps; // Artificially clamp from 1-5 (beyond that it likely breaks). Auto apply patch to all ROMs.
 
     // Store data we do not keep track of that cannot be determined.
@@ -290,13 +290,13 @@ public class Track
             while (true)
             {
                 var objId = reader.ReadByte();
-                if (objId == 0) return;
+                if (objId == 0) break;
                 Actors.Add(new(objId, new(reader.ReadByte(), reader.ReadByte()), reader.ReadByte()));
             }
         }
 
         #endregion
-
+    
         #region Load Item Boxes
         if (itemBoxAddress != headerAddress)
         {
@@ -304,12 +304,12 @@ public class Track
             while (true)
             {
                 var boxId = reader.ReadByte();
-                if (boxId == 0) return;
+                if (boxId == 0) break;
                 ItemBoxes.Add(new(boxId, new(reader.ReadByte(), reader.ReadByte()), reader.ReadByte()));
             }
         }
         #endregion
-        
+
         #region Load Behaviors
 
         reader.BaseStream.Seek(itemBoxAddress, SeekOrigin.Begin);

@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -12,6 +13,7 @@ public class GameGfx(byte[] indicies, Color[] palette)
         get
         {
             if (_cache is null) RegenCache();
+            Debug.Assert(_cache is not null);
             return _cache;
         }
     }

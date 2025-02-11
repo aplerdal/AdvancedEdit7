@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Diagnostics;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI;
 using AdvancedEdit.UI.Undo;
@@ -26,15 +27,18 @@ public class AdvancedEdit : Game
     public UiManager UiManager;
     public TrackManager TrackManager;
 
+    #pragma warning disable CS8618
     public AdvancedEdit()
     {
         Instance = this;
+        Debug.Assert(Instance is not null);
         Graphics = new GraphicsDeviceManager(this);
         
         Content.RootDirectory = "Content";
         IsMouseVisible = true;
         Window.AllowUserResizing = true;
     }
+    #pragma warning restore CS8618
 
     protected override void Initialize()
     {
