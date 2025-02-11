@@ -14,7 +14,8 @@ namespace AdvancedEdit;
 
 public class AdvancedEdit : Game
 {
-    public static AdvancedEdit Instance { get; private set; }
+    public static AdvancedEdit Instance { get; private set; } = null!;
+
     /// <summary>
     /// Program Version
     /// </summary>

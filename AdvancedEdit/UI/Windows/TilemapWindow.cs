@@ -80,6 +80,7 @@ public abstract class TilemapWindow(Track track) : UiWindow
     /// <param name="max">The coordinates of the largest point</param>
     /// <param name="color">The color of the rectangle</param>
     /// <param name="hovered">True when hovered</param>
+    /// <returns>Is rectangle hovered</returns>
     public bool Rectangle(Point min, Point max, Color color, bool hovered = false)
     {
         DrawCoords();

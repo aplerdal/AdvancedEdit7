@@ -1,4 +1,5 @@
 using System;
+using System.Drawing;
 using Microsoft.Xna.Framework;
 using Point = Microsoft.Xna.Framework.Point;
 using Rectangle = Microsoft.Xna.Framework.Rectangle;
@@ -40,7 +41,7 @@ public enum HoverPart
     Target,
 }
 
-public class AiSector
+public class AiSector : IEquatable<AiSector>
 {
     #region Properties
     /// <summary>
@@ -938,21 +939,34 @@ public class AiSector
             return points;
         }
 
+
     public static bool operator ==(AiSector sector1, AiSector sector2)
     {
-        return (sector1.Shape == sector2.Shape) && 
-               (sector1.Zone == sector2.Zone) &&
-               (sector1.Target == sector2.Target) &&
-               (sector1.Speed == sector2.Speed) && 
-               (sector1.Intersection == sector2.Intersection);
+        return sector1.Equals(sector2);
     }
 
     public static bool operator !=(AiSector sector1, AiSector sector2)
     {
-        return !((sector1.Shape == sector2.Shape) &&
-               (sector1.Zone == sector2.Zone) &&
-               (sector1.Target == sector2.Target) &&
-               (sector1.Speed == sector2.Speed) &&
-               (sector1.Intersection == sector2.Intersection));
+        return !sector1.Equals(sector2);
+    }
+
+    public bool Equals(AiSector? other)
+    {
+        if (other is null) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return _shape == other._shape && _zone.Equals(other._zone) && _target.Equals(other._target) && _speed == other._speed && Intersection == other.Intersection;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (obj is null) return false;
+        if (ReferenceEquals(this, obj)) return true;
+        if (obj.GetType() != GetType()) return false;
+        return Equals((AiSector)obj);
+    }
+
+    public override int GetHashCode()
+    {
+        return HashCode.Combine((int)_shape, _zone, _target, _speed, Intersection);
     }
 }

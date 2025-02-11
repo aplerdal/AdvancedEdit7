@@ -53,7 +53,7 @@ public class TilemapEditor : TrackEditor
             Point hoverTile = ((mousePosition - cursorPosition) / TileDisplaySize).ToPoint();
             Vector2 absoluteHoverTile = hoverTile.ToVector2() * TileDisplaySize + cursorPosition;
             if (ImGui.IsItemClicked())
-                ActiveTile = (byte?)((int)hoverTile.X + (int)hoverTile.Y * 16);
+                ActiveTile = (byte?)(hoverTile.X + hoverTile.Y * 16);
             ImGui.GetForegroundDrawList().AddRect(
                 (absoluteHoverTile - new Vector2(2)).ToNumerics(),
                 (absoluteHoverTile + new Vector2(TileDisplaySize + 2)).ToNumerics(),

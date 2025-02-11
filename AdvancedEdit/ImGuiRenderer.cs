@@ -33,6 +33,7 @@ public static class DrawVertDeclaration
 /// <summary>
 /// ImGui renderer for use with XNA-likes (FNA & MonoGame)
 /// </summary>
+#pragma warning disable CS8618
 public class ImGuiRenderer
     {
         private Game _game;
@@ -91,7 +92,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Creates a texture and loads the font data from ImGui. Should be called when the <see cref="GraphicsDevice" /> is initialized but before any rendering is done
         /// </summary>
-        public virtual unsafe void RebuildFontAtlas()
+        public unsafe void RebuildFontAtlas()
         {
             // Get font texture from ImGui
             var io = ImGui.GetIO();
@@ -119,7 +120,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Creates a pointer to a texture, which can be passed through ImGui calls such as <see cref="ImGui.Image" />. That pointer is then used by ImGui to let us know what texture to draw
         /// </summary>
-        public virtual IntPtr BindTexture(Texture2D texture)
+        public IntPtr BindTexture(Texture2D texture)
         {
             var id = new IntPtr(_textureId++);
 
@@ -131,7 +132,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Removes a previously created texture pointer, releasing its reference and allowing it to be deallocated
         /// </summary>
-        public virtual void UnbindTexture(IntPtr textureId)
+        public void UnbindTexture(IntPtr textureId)
         {
             _loadedTextures.Remove(textureId);
         }
@@ -139,7 +140,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Sets up ImGui for a new frame, should be called at frame start
         /// </summary>
-        public virtual void BeforeLayout(GameTime gameTime)
+        public void BeforeLayout(GameTime gameTime)
         {
             ImGui.GetIO().DeltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -456,3 +457,4 @@ public class ImGuiRenderer
 
         #endregion Internals
     }
+#pragma warning restore CS8618
