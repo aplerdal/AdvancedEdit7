@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -98,7 +99,7 @@ public static class Lz10
     /// </summary>
     public static unsafe byte[] Compress(ReadOnlySpan<byte> indata)
     {
-        List<byte> outBuffer = new List<byte>();
+        List<byte> finalBuffer = new List<byte>();
         // make sure the decompressed size fits in 3 bytes.
         // There should be room for four bytes, however I'm not 100% sure if that can be used
         // in every game, as it may not be a built-in function.
@@ -106,11 +107,10 @@ public static class Lz10
             throw new ArgumentOutOfRangeException("Input too large.");
         
         // write the compression header first
-        outBuffer.Add(0x10);
-        outBuffer.Add((byte)(indata.Length & 0xFF));
-        outBuffer.Add((byte)((indata.Length >> 8) & 0xFF));
-        outBuffer.Add((byte)((indata.Length >> 16) & 0xFF));
-        int compressedLength = 4;
+        finalBuffer.Add(0x10);
+        finalBuffer.Add((byte)(indata.Length & 0xFF));
+        finalBuffer.Add((byte)((indata.Length >> 8) & 0xFF));
+        finalBuffer.Add((byte)((indata.Length >> 16) & 0xFF));
         fixed (byte* instart = &indata[0])
         {
             // we do need to buffer the output, as the first byte indicates which blocks are compressed.
@@ -125,8 +125,7 @@ public static class Lz10
                 // we can only buffer 8 blocks at a time.
                 if (bufferedBlocks == 8)
                 {
-                    outBuffer.AddRange(outBuffer.Take(bufferlength));
-                    compressedLength += bufferlength;
+                    finalBuffer.AddRange(outbuffer.Take(bufferlength));
                     // reset the buffer
                     outbuffer[0] = 0;
                     bufferlength = 1;
@@ -162,17 +161,15 @@ public static class Lz10
             // copy the remaining blocks to the output
             if (bufferedBlocks > 0)
             {
-                outBuffer.AddRange(outBuffer.Take(bufferlength));
-                compressedLength += bufferlength;
-                /*/ make the compressed file 4-byte aligned.
-                while ((compressedLength % 4) != 0)
-                {
-                    outstream.WriteByte(0);
-                    compressedLength++;
-                }/**/
+                finalBuffer.AddRange(outbuffer.Take(bufferlength));
             }
         }
-        return outBuffer.ToArray();
+
+        while (finalBuffer.Count % 4 != 0)
+        {
+            finalBuffer.Add(0);
+        }
+        return finalBuffer.ToArray();
     }
     #endregion
 

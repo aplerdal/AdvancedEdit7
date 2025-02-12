@@ -31,13 +31,26 @@ public static class MenuBar
                     var status = NativeFileDialogs.Net.Nfd.OpenDialog(out path, RomFilter, null);
                     if (status == NfdStatus.Ok && path is not null)
                     {
-                        AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(File.OpenRead(path)));
-                        var track = TrackManager.Tracks[29];
-                        AdvancedEdit.Instance.UiManager.AddWindow(new TrackWindow(track));
+                        var file = File.OpenRead(path);
+                        AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file));
+                        AdvancedEdit.Instance.TrackManager.RomPath = path;
+                        AdvancedEdit.Instance.UiManager.AddWindow(new TrackWindow(TrackManager.Tracks[29]));
+                        file.Close();
                     }
                 }
 
-                ImGui.MenuItem("Save ROM", "ctrl+s");
+                if (ImGui.MenuItem("Save ROM", "ctrl+s"))
+                {
+                    string? path;
+                    var status = NativeFileDialogs.Net.Nfd.SaveDialog(out path, RomFilter, "mksc_modified");
+                    if (status == NfdStatus.Ok && path is not null)
+                    {
+                        File.Copy(AdvancedEdit.Instance.TrackManager.RomPath, path, true);
+                        var file = File.OpenWrite(path);
+                        AdvancedEdit.Instance.TrackManager.Save(new BinaryWriter(file));
+                        file.Close();
+                    }
+                }
                 ImGui.Separator();
                 ImGui.MenuItem("Open Project", "ctrl+shift+o");
                 ImGui.MenuItem("Save Project", "ctrl+shift+s");

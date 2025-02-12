@@ -73,7 +73,7 @@ public class AiSector : IEquatable<AiSector>
 
     private Rectangle _zone;
     /// <summary>
-    /// Gets the area
+    /// Gets the area in single tile persision
     /// </summary>
     public Rectangle Zone
     {
@@ -968,5 +968,43 @@ public class AiSector : IEquatable<AiSector>
     public override int GetHashCode()
     {
         return HashCode.Combine((int)_shape, _zone, _target, _speed, Intersection);
+    }
+
+    public void GetRawInputs(out Point target, out ZoneShape shape, out Rectangle zone, out int speed, out bool intersection)
+    {
+        target = _target;
+        shape = _shape;
+        speed = _speed;
+        intersection = Intersection;
+
+        var zoneX = _zone.X / Precision;
+        var zoneY = _zone.Y / Precision;
+        var zoneWidth = (_zone.Width - Precision) / Precision;
+        var zoneHeight = (_zone.Height - Precision) / Precision;
+
+        if (_shape == ZoneShape.Rectangle)
+        {
+            zone = new Rectangle(zoneX, zoneY, zoneWidth, zoneHeight);
+        }
+        else
+        {
+            var zoneSize = _zone.Width / Precision - 1;
+
+            switch (_shape)
+            {
+                case ZoneShape.TopRight:
+                    zoneX += zoneSize;
+                    break;
+                case ZoneShape.BottomRight:
+                    zoneX += zoneSize;
+                    zoneY += zoneSize;
+                    break;
+                case ZoneShape.BottomLeft:
+                    zoneY += zoneSize;
+                    break;
+            }
+
+            zone = new Rectangle(zoneX, zoneY, zoneSize, zoneSize);
+        }
     }
 }

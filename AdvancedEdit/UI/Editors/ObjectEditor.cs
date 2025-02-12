@@ -62,21 +62,24 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
     {
         _hoverSet = false;
         var track = Window.Track;
-        for (int i = 0; i < track.Actors.Count; i++){
-            UpdateObject(Window.Track.Actors[i], new ObjectAccess(track.Actors, i));
-        }
-        for (int i = 0; i < track.ItemBoxes.Count; i++) {
-            UpdateObject(Window.Track.ItemBoxes[i], new ObjectAccess(track.ItemBoxes, i));    
-        }
-        for (int i = 0; i < track.Positions.Count; i++){
-            UpdateObject(Window.Track.Positions[i], new ObjectAccess(track.Positions, i));
-        }
+        if (_actorsLayer)
+            for (int i = 0; i < track.Actors.Count; i++){
+                UpdateObject(Window.Track.Actors[i], new ObjectAccess(track.Actors, i));
+            }
+        if (_boxesLayer)
+            for (int i = 0; i < track.ItemBoxes.Count; i++) {
+                UpdateObject(Window.Track.ItemBoxes[i], new ObjectAccess(track.ItemBoxes, i));    
+            }
+        if (_positionsLayer)
+            for (int i = 0; i < track.Positions.Count; i++){
+                UpdateObject(Window.Track.Positions[i], new ObjectAccess(track.Positions, i));
+            }
         if (!_hoverSet) _hover = null;
         UpdateDrag();
 
     }
     private void UpdateObject(GameObject obj, ObjectAccess access) {
-        Color color = getIdColor(obj.Id);
+        Color color = GetIdColor(obj.Id);
         ImGui.GetWindowDrawList().AddCircleFilled(
             Window.TileToWindow(obj.Position),
              4 * Window.Scale,
@@ -104,10 +107,13 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
     private void UpdateDrag(){
         if (_dragging) {
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left)){
-                var delta = Window.HoveredTile - _drag.LastPosition;
-                _drag.LastPosition = Window.HoveredTile;
+                if (ImGui.IsWindowHovered())
+                {
+                    var delta = Window.HoveredTile - _drag.LastPosition;
+                    _drag.LastPosition = Window.HoveredTile;
 
-                _drag.ObjectsList[_drag.ObjectNumber].Position += delta;
+                    _drag.ObjectsList[_drag.ObjectNumber].Position += delta;
+                }
             } else {
                 _dragging = false;
                 if (_drag.Original.Position == _drag.ObjectsList[_drag.ObjectNumber].Position)
@@ -116,39 +122,53 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
                 }
                 else
                 {
+                    for (var i = 0; i < Window.Track.AiSectors.Count; i++)
+                    {
+                        if (Window.Track.AiSectors[i].GetResizeHandle(_drag.ObjectsList[_drag.ObjectNumber].Position) != ResizeHandle.None)
+                        {
+                            _drag.ObjectsList[_drag.ObjectNumber].Zone = (byte)i;
+                        }
+                    }
+
                     UndoManager.Do(_drag);
                 }
             }
         } else {
-            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _hover == null){
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && _hover == null && ImGui.IsWindowHovered()){
                 _selection = null;
             }
         }
     }
-    private static Color getIdColor(int id){
+    private static Color GetIdColor(int id){
         switch(id) {
-            case 0x81:
+            case 0x81: // GP start positions
             case 0x82:
-            // etc, check these colors later
-                return Color.Goldenrod;
-            case 0x0:
-            case 0x1:
+            case 0x83:
+            case 0x84:
+            case 0x85:
+            case 0x86:
+            case 0x87:
+            case 0x88:
+                return Color.Aquamarine;
+            case 0x89: // singlepak positions
+            case 0x8A:
+                return Color.DarkTurquoise;
+            case 0x1: // Item boxes
                 return Color.Violet;
             default:
                 return Color.WhiteSmoke;
         }
     }
-    bool actorsLayer = true;
-    bool positionsLayer = true;
-    bool boxesLayer = true;
+    bool _actorsLayer = true;
+    bool _positionsLayer = true;
+    bool _boxesLayer = true;
     public override void DrawInspector()
     {
-        ImGui.SeparatorText($"Object Editor");
 
         ImGui.SeparatorText("Layers");
-        ImGui.Checkbox("Objects", ref actorsLayer);
-        ImGui.Checkbox("Positions", ref positionsLayer);
-        ImGui.Checkbox("Boxes", ref boxesLayer);
+        ImGui.Checkbox("Objects", ref _actorsLayer);
+        ImGui.Checkbox("Positions", ref _positionsLayer);
+        ImGui.Checkbox("Boxes", ref _boxesLayer);
 
         ImGui.SeparatorText("Properties");
         if (_selection is not null) {
@@ -157,10 +177,11 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
             int id = obj.Id & 0b01111111;
             ImGui.InputInt("ID: ", ref id);
             id &= 0b01111111;
+            int global = obj.Id & 0x80;
             HelpMarker("Changes the id of the object. If you are using a object from a different track it is recommended to make this object global.");
-            ImGui.CheckboxFlags("Global Object: ", ref id, 0x80);
+            ImGui.CheckboxFlags("Global Object: ", ref global, 0x80);
             HelpMarker("Changes object to global table. Allows access to all objects from other tracks. For a full list of global objects check (TODO)");
-
+            obj.Id = (byte)(id | global);
             ImGui.SeparatorText("Object List");
             if (ImGui.Button("Add Object")) {
                 selection.List.Add(new GameObject(2, new Point(64,64), 0));
@@ -177,7 +198,9 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
                 selection.List.RemoveAt(selection.index);
                 _selection = null;
             }
-        } else {
+        } 
+        else 
+        {
             ImGui.BeginDisabled();
             var i = 0;
             ImGui.InputInt("ID: ", ref i);

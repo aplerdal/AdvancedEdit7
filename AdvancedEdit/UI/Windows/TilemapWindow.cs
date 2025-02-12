@@ -65,14 +65,6 @@ public abstract class TilemapWindow(Track track) : UiWindow
     public System.Numerics.Vector2 TileToWindow(Point tile) => (tile.ToVector2() * 8 * Scale + MapPosition).ToNumerics();
     public System.Numerics.Vector2 PixelToWindow(Point pixel) => (pixel.ToVector2() * Scale + MapPosition).ToNumerics();
 
-    private void DrawCoords()
-    {
-        string text = $"{HoveredTile.X}, {HoveredTile.Y}";
-        var pos = ImGui.GetMousePos();
-        DrawList.AddRectFilled(pos, pos + ImGui.CalcTextSize(text), Color.DarkGray.PackedValue);
-        DrawList.AddText(pos, Color.White.PackedValue, text);
-    }
-
     /// <summary>
     /// Draw rectangle given tile coordinates
     /// </summary>
@@ -83,7 +75,6 @@ public abstract class TilemapWindow(Track track) : UiWindow
     /// <returns>Is rectangle hovered</returns>
     public bool Rectangle(Point min, Point max, Color color, bool hovered = false)
     {
-        DrawCoords();
         var hov = HoveredTile;
         Color trans = new Color(color.R, color.G, color.B, (byte)(color.A * (hovered?0.75f:0.5f)));
         DrawList.AddRectFilled(TileToWindow(min), TileToWindow(max), trans.PackedValue);
