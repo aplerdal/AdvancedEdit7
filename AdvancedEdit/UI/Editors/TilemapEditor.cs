@@ -53,7 +53,7 @@ public class TilemapEditor : TrackEditor
             Point hoverTile = ((mousePosition - cursorPosition) / TileDisplaySize).ToPoint();
             Vector2 absoluteHoverTile = hoverTile.ToVector2() * TileDisplaySize + cursorPosition;
             if (ImGui.IsItemClicked())
-                ActiveTile = (byte?)(hoverTile.X + hoverTile.Y * 16);
+                ActiveTile = (byte)(hoverTile.X + hoverTile.Y * 16);
             ImGui.GetForegroundDrawList().AddRect(
                 (absoluteHoverTile - new Vector2(2)).ToNumerics(),
                 (absoluteHoverTile + new Vector2(TileDisplaySize + 2)).ToNumerics(),
@@ -63,7 +63,6 @@ public class TilemapEditor : TrackEditor
                 3.0f
             );
         }
-
         if (ActiveTile is not null)
         {
             ImGui.GetForegroundDrawList().AddRect(
@@ -76,6 +75,15 @@ public class TilemapEditor : TrackEditor
                 0,
                 3.0f
             );
+        }
+
+        ImGui.SeparatorText("Tools");
+        // TODO: Add tool icons / imagebuttons
+        if (ImGui.Button("Draw") || ImGui.IsKeyPressed(ImGuiKey.P)) {
+            _activeTool = new Draw();
+        }
+        if (ImGui.Button("Eyedropper") || ImGui.IsKeyPressed(ImGuiKey.V)){
+            _activeTool = new Eyedropper();
         }
 
         ImGui.Separator();

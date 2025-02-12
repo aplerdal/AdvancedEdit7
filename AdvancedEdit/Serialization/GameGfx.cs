@@ -5,7 +5,6 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace AdvancedEdit.Serialization;
 
-// TODO: Change this to only allow tile accessability instead of single texture. If an atlas is needed (eg tilesets) make a inheritor class
 public class GameGfx(byte[] indicies, Color[] palette)
 {
     public Texture2D Texture

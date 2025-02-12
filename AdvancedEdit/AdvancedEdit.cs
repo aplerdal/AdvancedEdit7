@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Diagnostics;
+using System.Configuration;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI;
 using AdvancedEdit.UI.Undo;
@@ -43,7 +44,6 @@ public class AdvancedEdit : Game
 
     protected override void Initialize()
     {
-        // TODO: Add your initialization logic here
         ImGuiRenderer = new ImGuiRenderer(this);
         ImGuiRenderer.RebuildFontAtlas();
         UiManager = new UiManager();
@@ -62,14 +62,11 @@ public class AdvancedEdit : Game
         //UiManager.AddWindow(new AiEditor(track));
         UiManager.AddWindow(new TrackSelector());
 
-        // TODO: use this.Content to load your game content here
         base.LoadContent();
     }
 
     protected override void Update(GameTime gameTime)
     {
-        // TODO: Add your update logic here
-
         base.Update(gameTime);
     }
 
@@ -77,7 +74,6 @@ public class AdvancedEdit : Game
     {
         GraphicsDevice.Clear(Color.CornflowerBlue);
         ImGuiRenderer.BeforeLayout(gameTime);
-        // TODO: Add your drawing code here
 
         UiManager.DrawWindows();
         

@@ -28,7 +28,7 @@ public static class MenuBar
                 if (ImGui.MenuItem("Open ROM", "ctrl+o"))
                 {
                     string? path;
-                    var status = NativeFileDialogs.Net.Nfd.OpenDialog(out path, RomFilter, null);
+                    var status = Nfd.OpenDialog(out path, RomFilter, null);
                     if (status == NfdStatus.Ok && path is not null)
                     {
                         var file = File.OpenRead(path);
@@ -42,13 +42,14 @@ public static class MenuBar
                 if (ImGui.MenuItem("Save ROM", "ctrl+s"))
                 {
                     string? path;
-                    var status = NativeFileDialogs.Net.Nfd.SaveDialog(out path, RomFilter, "mksc_modified");
+                    var status = Nfd.SaveDialog(out path, RomFilter, "mksc_modified.gba");
                     if (status == NfdStatus.Ok && path is not null)
                     {
                         File.Copy(AdvancedEdit.Instance.TrackManager.RomPath, path, true);
                         var file = File.OpenWrite(path);
                         AdvancedEdit.Instance.TrackManager.Save(new BinaryWriter(file));
                         file.Close();
+                        ImGui.OpenPopup("saved");
                     }
                 }
                 ImGui.Separator();
@@ -80,9 +81,14 @@ public static class MenuBar
                 ImGui.EndMenu();
             }
 
-            if (ImGui.BeginMenu("Run")) ImGui.EndMenu();
-
             ImGui.EndMainMenuBar();
+
+            if (ImGui.BeginPopupModal("saved")) {
+                ImGui.Text("Sucessfully saved file.");
+                if (ImGui.Button("Close"))
+                    ImGui.CloseCurrentPopup();
+                ImGui.EndPopup();
+            }
         }
     }
 }

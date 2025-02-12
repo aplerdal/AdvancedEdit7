@@ -31,6 +31,7 @@ public class Track
         {
             if (_tileset is not null) return _tileset;
             if (ReusedTileset == 0) throw new Exception("Tileset null, not reused.");
+            // Should be read from defintion index iirc
             return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
         }
         set => _tileset = value;
@@ -43,7 +44,7 @@ public class Track
         get
         {
             if (_actorGfx is not null) return _actorGfx;
-            if (ReusedActorGfx == 0) return null;
+            if (ReusedActorGfx == 0) return null; // No actor gfx in scene
             return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ActorGfx;
         }
         set => _actorGfx = value;
@@ -109,7 +110,6 @@ public class Track
         _musicId = reader.ReadUInt32();
         _targetSetTable = reader.ReadUInt32();
         _tdUnknown = reader.ReadUInt32();
-        //TODO: Load track gfx
         _trackArtGfx = reader.ReadUInt32();
         _trackArtPalette = reader.ReadUInt32();
         _trackLockedPalette = reader.ReadUInt32();
@@ -359,7 +359,7 @@ public class Track
         {
             reader.BaseStream.Seek(minimapAddress, SeekOrigin.Begin);
             byte[] data = Lz10.Decompress(reader).ToArray();
-            _minimap = data; // TODO: Load real minimap palette
+            _minimap = data;
         }
         #endregion
     }
@@ -372,7 +372,7 @@ public class Track
     /// <param name="header">The address of the new header</param>
     /// <returns>Size of track</returns>
     public uint Write(BinaryWriter writer, uint definition, uint header) {
-        /*
+
         writer.BaseStream.Seek(definition, SeekOrigin.Begin);
         writer.Write(_trackId);
         writer.Write(_backgroundId);
@@ -383,13 +383,12 @@ public class Track
         writer.Write(_musicId);
         writer.Write(_targetSetTable);
         writer.Write(_tdUnknown);
-        // TODO: Read and write these correctly.
         writer.Write(_trackArtGfx);
         writer.Write(_trackArtPalette);
         writer.Write(_trackLockedPalette);
         writer.Write(_trackNameGfx);
         writer.Write(Laps);
-        */
+
         const int headerSize = 0x100;
         uint pos = headerSize;
 

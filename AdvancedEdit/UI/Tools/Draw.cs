@@ -21,7 +21,8 @@ public class DrawAction : IUndoable
         _oldTiles = new Dictionary<Point, byte>();
     }
 
-    public void Do() // Could make this faster by removing draw the first time it is called.
+    // Could make this faster by removing draw the first time it is called if needed.
+    public void Do()
     {
         _oldTiles = new Dictionary<Point, byte>();
         foreach (var tile in NewTiles.Keys)
@@ -40,46 +41,41 @@ public class DrawAction : IUndoable
 public class Draw : TilemapEditorTool
 {
     private DrawAction? _drawAction;
-    public byte? ActiveTile = null;
     
     public override void Update(TilemapEditor editor)
     {
-        Vector2 mousePosition = ImGui.GetMousePos();
-        if (ImGui.IsItemHovered())
-        {
-            Vector2 hoveredTile = editor.Window.HoveredTile.ToVector2();
-            hoveredTile = new Vector2((int)hoveredTile.X, (int)hoveredTile.Y);
-            Vector2 absoluteHoveredTile = editor.Window.MapPosition + hoveredTile * (8 * editor.Window.Scale);
+        Point hoveredTile = editor.Window.HoveredTile;
 
-            if (ActiveTile is not null)
+        if (editor.ActiveTile is not null)
+        {
+            byte tile = editor.ActiveTile.Value;
+            if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && ImGui.IsWindowHovered())
             {
-                byte tile = ActiveTile.Value;
-                if (ImGui.IsMouseDown(ImGuiMouseButton.Left))
-                {
-                    if (_drawAction is null) {
-                        _drawAction = new DrawAction(editor.Window.Track);
-                    } else {
-                        if (!_drawAction.NewTiles.ContainsKey(new((int)hoveredTile.X, (int)hoveredTile.Y)))
-                        {
-                            editor.Window.Track.Tilemap.DrawTile(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
-                            _drawAction.NewTiles.Add(new((int)hoveredTile.X, (int)hoveredTile.Y), tile);
-                        }
+                if (_drawAction is null) {
+                    _drawAction = new DrawAction(editor.Window.Track);
+                } else {
+                    if (!_drawAction.NewTiles.ContainsKey(hoveredTile))
+                    {
+                        editor.Window.Track.Tilemap.DrawTile(hoveredTile, tile);
+                        _drawAction.NewTiles.Add(hoveredTile, tile);
                     }
                 }
-                else if (_drawAction is not null)
-                {
-                    editor.UndoManager.Do(_drawAction);
-                    _drawAction = null;
-                }
-
-                ImGui.SetCursorScreenPos(absoluteHoveredTile.ToNumerics());
-                ImGui.Image(
-                    editor.Window.Track.Tileset.TexturePtr,
-                    new(8 * editor.Window.Scale),
-                    new(tile / 256f, 0),
-                    new(tile / 256f + 1 / 256f, 1)
-                );
             }
+            else if (_drawAction is not null)
+            {
+                editor.UndoManager.Do(_drawAction);
+                _drawAction = null;
+            }
+            var min = editor.Window.TileToWindow(hoveredTile);
+            var max = editor.Window.TileToWindow(hoveredTile+new Point(1));
+            ImGui.SetCursorScreenPos(min);
+            ImGui.Image(
+                editor.Window.Track.Tileset.TexturePtr,
+                new(8 * editor.Window.Scale),
+                new(tile / 256f, 0),
+                new(tile / 256f + 1 / 256f, 1)
+            );
+            ImGui.GetWindowDrawList().AddRect(min,max, Color.WhiteSmoke.PackedValue, 0, 0, 2.0f);
         }
     }
 }
