@@ -81,30 +81,19 @@ public class AiSector : IEquatable<AiSector>
         set => _zone = value;
     }
 
-    private Point _target;
     /// <summary>
-    /// Gets or sets the target
+    /// Gets or sets the target positions
     /// </summary>
-    public Point Target
-    {
-        get => _target;
-        set => _target = Vector2.Clamp(value.ToVector2(), Vector2.Zero, new Vector2(UInt16.MaxValue)).ToPoint();
-    }
-
-    private int _speed;
+    public Point[] Targets;
     /// <summary>
-    /// Sets the speed value of the target. Ranges from 0-3
+    /// Sets the speed values of the targets. Ranges from 0-3
     /// </summary>
-    public int Speed
-    {
-        get => _speed;
-        set => _speed = Math.Clamp(value, 0, 3);
-    }
+    public int[] Speeds;
 
     /// <summary>
-    /// Determines if the zone is treated as an intersection
+    /// Determines if the target is treated as an intersection
     /// </summary>
-    public bool Intersection { get; set; }
+    public bool[] Intersections;
 
     /// <summary>
     /// Gets and sets the position of the zone
@@ -138,15 +127,15 @@ public class AiSector : IEquatable<AiSector>
     }
     #endregion
 
-    public AiSector(Point target, ZoneShape shape, Rectangle zone, int speed, bool intersection)
+    public AiSector(Point[] targets, ZoneShape shape, Rectangle zone, int[] speeds, bool[] intersections)
     {
-        _target = target;
+        Targets = targets;
         var zoneX = zone.X * Precision;
         var zoneY = zone.Y * Precision;
         
-        _speed = speed;
+        Speeds = speeds;
         _shape = shape;
-        Intersection = intersection;
+        Intersections = intersections;
 
         if (shape == ZoneShape.Rectangle)
         {
@@ -186,22 +175,23 @@ public class AiSector : IEquatable<AiSector>
         _zone = zone;
         var x = zone.X + zone.Width / Precision;
         var y = zone.Y + zone.Height / Precision;
-        _target = new Point(x, y);
-        _speed = 0;
+        var pos = new Point(x, y);
+        Targets = [pos,pos,pos];
+        Speeds = [0,0,0];
     }
 
     public AiSector(AiSector oldSector)
     {
-        _target = oldSector.Target;
+        Targets = oldSector.Targets;
         _zone = oldSector.Zone;
-        _speed = oldSector.Speed;
+        Speeds = oldSector.Speeds;
         _shape = oldSector.Shape;
-        Intersection = oldSector.Intersection;
+        Intersections = oldSector.Intersections;
     } 
 
-    public HoverPart GetHover(Point point)
+    public HoverPart GetHover(Point point, int targetSet)
     {
-        if (point.X > _target.X - 2 && point.X < _target.X + 1 && point.Y > _target.Y - 2 && point.Y < _target.Y + 1)
+        if (point.X > Targets[targetSet].X - 2 && point.X < Targets[targetSet].X + 1 && point.Y > Targets[targetSet].Y - 2 && point.Y < Targets[targetSet].Y + 1)
             return HoverPart.Target;
         if (Shape == ZoneShape.Rectangle)
         {
@@ -954,7 +944,7 @@ public class AiSector : IEquatable<AiSector>
     {
         if (other is null) return false;
         if (ReferenceEquals(this, other)) return true;
-        return _shape == other._shape && _zone.Equals(other._zone) && _target.Equals(other._target) && _speed == other._speed && Intersection == other.Intersection;
+        return _shape == other._shape && _zone.Equals(other._zone) && Targets.Equals(other.Targets) && Speeds == other.Speeds && Intersections == other.Intersections;
     }
 
     public override bool Equals(object? obj)
@@ -967,15 +957,15 @@ public class AiSector : IEquatable<AiSector>
 
     public override int GetHashCode()
     {
-        return HashCode.Combine((int)_shape, _zone, _target, _speed, Intersection);
+        return HashCode.Combine((int)_shape, _zone, Targets, Speeds, Intersections);
     }
 
-    public void GetRawInputs(out Point target, out ZoneShape shape, out Rectangle zone, out int speed, out bool intersection)
+    public void GetRawInputs(out Point[] targets, out ZoneShape shape, out Rectangle zone, out int[] speeds, out bool[] intersections)
     {
-        target = _target;
+        targets = Targets;
         shape = _shape;
-        speed = _speed;
-        intersection = Intersection;
+        speeds = Speeds;
+        intersections = Intersections;
 
         var zoneX = _zone.X / Precision;
         var zoneY = _zone.Y / Precision;

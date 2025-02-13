@@ -223,22 +223,27 @@ public class Track
         byte sectorCount = reader.ReadByte();
         uint zonesAddress = aiAddress + reader.ReadUInt16();
         uint targetsAddress = aiAddress + reader.ReadUInt16();
-        
         const int targetSize = 2 + 2 + 1 + 3;
         const int zoneSize = 1 + 2 + 2 + 2 + 2 + 3;
+        uint targetSetSize = (uint)(sectorCount*targetSize);
+
         for (int i = 0; i < sectorCount; i++)
         {
-            reader.BaseStream.Seek(targetsAddress + i*targetSize, SeekOrigin.Begin);
-            var target = new Point(reader.ReadUInt16(), reader.ReadUInt16());
-            byte speedFlagUnion = reader.ReadByte();
-            var speed = (speedFlagUnion & 0x3);
-            var intersection = (speedFlagUnion & 0x80) == 0x80;
-
+            Point[] targets = new Point[3];
+            int[] speeds = new int[3];
+            bool[] intersections = new bool[3];
+            for (int j = 0; j<3; j++) {
+                reader.BaseStream.Seek(targetsAddress + i*targetSize + targetSetSize*j, SeekOrigin.Begin);
+                targets[j] = new Point(reader.ReadUInt16(), reader.ReadUInt16());
+                byte speedFlagUnion = reader.ReadByte();
+                speeds[j] = (speedFlagUnion & 0x3);
+                intersections[j] = (speedFlagUnion & 0x80) == 0x80;
+            }
             reader.BaseStream.Seek(zonesAddress + i * zoneSize, SeekOrigin.Begin);
             var shape = (ZoneShape)reader.ReadByte();
             var rect = new Rectangle(reader.ReadUInt16(), reader.ReadUInt16(), reader.ReadUInt16(), reader.ReadUInt16());
 
-            AiSectors.Add(new AiSector(target, shape, rect, speed, intersection));
+            AiSectors.Add(new AiSector(targets, shape, rect, speeds, intersections));
         }
         #endregion
 
@@ -540,9 +545,9 @@ public class Track
                 foreach (var sector in AiSectors)
                 {
                     sector.GetRawInputs(out var target, out _, out _, out var speed, out var intersection);
-                    writer.Write((ushort)target.X);
-                    writer.Write((ushort)target.Y);
-                    writer.Write((byte)(speed | (intersection ? 0x80 : 0)));
+                    writer.Write((ushort)target[i].X);
+                    writer.Write((ushort)target[i].Y);
+                    writer.Write((byte)(speed[i] | (intersection[i] ? 0x80 : 0)));
                     WritePadding(writer, 3);
                     pos += 8;
                 }

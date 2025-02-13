@@ -45,6 +45,7 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
     private MouseCursor _mouseCursor = MouseCursor.Arrow;
     private bool _dragging;
     private int _selectedSector = -1;
+    private int _activeSet = 0;
 
     private AiDrag _drag = new();
 
@@ -71,7 +72,7 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
                 var sector = View.Track.AiSectors[i];
                 if (hasFocus)
                 {
-                    var thisHover = sector.GetHover(View.HoveredTile);
+                    var thisHover = sector.GetHover(View.HoveredTile, _activeSet);
                     if (thisHover > hovered)
                     {
                         hovered = thisHover;
@@ -130,7 +131,7 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
                     {
                         sector.Zone = sector.Zone with {X = sector.Zone.X+delta.X*2, Y = sector.Zone.Y+delta.Y * 2 };
                     }
-                    sector.Target += delta * new Point(2);   
+                    sector.Targets[_activeSet] += delta * new Point(2);   
                 }
                 else
                 {
@@ -171,7 +172,9 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
 
     public override void DrawInspector()
     {
-        ImGui.SeparatorText($"Ai Editor");
+        ImGui.Combo("Target Set", ref _activeSet, ["Set 1", "Set 2", "Set 3"], 3);
+        HelpMarker("The AI Uses 3 different target sets to make the AI more interesting. It is reccommended to manually make all three, but you can alternitively copy the first to the other two.");
+        ImGui.SeparatorText("Sector Properties");
         if (_selectedSector == -1)
         {
             ImGui.BeginDisabled();
@@ -201,17 +204,17 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
             HelpMarker("Sets shape of the zone. The direction on triangles refers to the right angle position.");
             sector.Shape = (ZoneShape)shape;
             
-            int speedBuffer = sector.Speed;
+            int speedBuffer = sector.Speeds[_activeSet];
             ImGui.InputInt("Speed", ref speedBuffer);
             ImGui.SameLine();
             HelpMarker("Sets the speed the AI will move through the zone from 0(slowest) to 3(fastest).");
-            sector.Speed = speedBuffer;
+            sector.Speeds[_activeSet] = speedBuffer;
 
-            bool intersectionBuffer = sector.Intersection;
+            bool intersectionBuffer = sector.Intersections[_activeSet];
             ImGui.Checkbox("Intersection", ref intersectionBuffer);
             ImGui.SameLine();
             HelpMarker("Determines if the element is at an intersection. When an AI element is flagged as an intersection, this tells the AI to ignore the intersected AI zones, and avoids track object display issues when switching zones.");
-            sector.Intersection = intersectionBuffer;
+            sector.Intersections[_activeSet] = intersectionBuffer;
         }
         ImGui.SeparatorText("Sector List");
         if (ImGui.Button("Add Sector")) {
@@ -221,7 +224,7 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
         if ((ImGui.Button("Duplicate Sector") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D)) && _selectedSector != -1){
             var sector = new AiSector(View.Track.AiSectors[_selectedSector]);
             sector.Position += new Point(2);
-            sector.Target += new Point(2);
+            sector.Targets[_activeSet] += new Point(2);
             View.Track.AiSectors.Add(sector);
             _selectedSector = View.Track.AiSectors.Count - 1;
         }
@@ -239,8 +242,8 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
     private void DrawAiSector(AiSector sector, bool hovered, bool selected)
     {
         var drawlist = ImGui.GetWindowDrawList();
-        var fillColor = hovered | selected ? HoverZoneColors[sector.Speed] : FillZoneColors[sector.Speed];
-        var outlineColor = selected ? 0xffffffff : SolidZoneColors[sector.Speed];
+        var fillColor = hovered | selected ? HoverZoneColors[sector.Speeds[_activeSet]] : FillZoneColors[sector.Speeds[_activeSet]];
+        var outlineColor = selected ? 0xffffffff : SolidZoneColors[sector.Speeds[_activeSet]];
         var outlineThickness = hovered | selected ? 3f : 1f;
         if (sector.Shape == ZoneShape.Rectangle)
         {
@@ -250,9 +253,9 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
             drawlist.AddRectFilled(min, max, fillColor);
             drawlist.AddRect(min, max, outlineColor, 0, 0, outlineThickness);
 
-            var tmin = View.TileToWindow(sector.Target - new Point(1));
-            var tget = View.TileToWindow(sector.Target);
-            var tmax = View.TileToWindow(sector.Target + new Point(1));
+            var tmin = View.TileToWindow(sector.Targets[_activeSet] - new Point(1));
+            var tget = View.TileToWindow(sector.Targets[_activeSet]);
+            var tmax = View.TileToWindow(sector.Targets[_activeSet] + new Point(1));
             drawlist.AddRectFilled(tmin, tmax, fillColor);
             drawlist.AddRect(tmin, tmax, outlineColor, 0, 0, outlineThickness);
             return;
@@ -272,8 +275,8 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
         drawlist.AddPolyline(ref loopPoints[0], loopPoints.Length, outlineColor, 0,
             outlineThickness);
 
-        var targetMin = View.TileToWindow(sector.Target - new Point(1));
-        var targetMax = View.TileToWindow(sector.Target + new Point(1));
+        var targetMin = View.TileToWindow(sector.Targets[_activeSet] - new Point(1));
+        var targetMax = View.TileToWindow(sector.Targets[_activeSet] + new Point(1));
         drawlist.AddRectFilled(targetMin, targetMax, fillColor);
         drawlist.AddRect(targetMin,targetMax, outlineColor, 0, 0, outlineThickness);
     }
