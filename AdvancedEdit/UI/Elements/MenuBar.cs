@@ -9,7 +9,6 @@ namespace AdvancedEdit.UI.Elements;
 
 public static class MenuBar
 {
-    private static bool _debug;
     /// <summary>
     /// File filter for gba files
     /// </summary>
@@ -20,7 +19,6 @@ public static class MenuBar
     /// </summary>
     public static void Draw()
     {
-        if (_debug) ImGui.ShowMetricsWindow();
         if (ImGui.BeginMainMenuBar())
         {
             if (ImGui.BeginMenu("File"))
@@ -32,9 +30,12 @@ public static class MenuBar
                     if (status == NfdStatus.Ok && path is not null)
                     {
                         var file = File.OpenRead(path);
-                        AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file));
-                        AdvancedEdit.Instance.TrackManager.RomPath = path;
-                        AdvancedEdit.Instance.UiManager.AddTrack(new TrackView(TrackManager.Tracks[29]));
+                        AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file), path);
+                        if (TrackManager.Tracks != null) {
+                            AdvancedEdit.Instance.TrackManager.RomPath = path;
+                            AdvancedEdit.Instance.UiManager.AddTrack(new TrackView(TrackManager.Tracks[29]));
+                        }
+                        // TODO: Show user error.
                         file.Close();
                     }
                 }
@@ -45,7 +46,7 @@ public static class MenuBar
                     var status = Nfd.SaveDialog(out path, RomFilter, "mksc_modified.gba");
                     if (status == NfdStatus.Ok && path is not null)
                     {
-                        File.Copy(AdvancedEdit.Instance.TrackManager.RomPath, path, true);
+                        File.Copy(AdvancedEdit.Instance.TrackManager!.RomPath, path, true);
                         var file = File.OpenWrite(path);
                         AdvancedEdit.Instance.TrackManager.Save(new BinaryWriter(file));
                         file.Close();

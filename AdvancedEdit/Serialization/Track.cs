@@ -32,7 +32,7 @@ public class Track
             if (_tileset is not null) return _tileset;
             if (ReusedTileset == 0) throw new Exception("Tileset null, not reused.");
             // Should be read from defintion index iirc
-            return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
+            return TrackManager.Tracks![Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
         }
         set => _tileset = value;
     }
