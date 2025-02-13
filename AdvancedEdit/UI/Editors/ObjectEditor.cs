@@ -44,10 +44,10 @@ enum ObjectType {
     Boxes,
 }
 
-public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
+public class ObjectEditor(TrackView trackView) : TrackEditor(trackView)
 {
     // This is a terrible name, but basically it gives the object type and index in the track of said object
-    private record struct ObjectAccess(List<GameObject> List, int index);
+    private record struct ObjectAccess(List<GameObject> List, int Index);
 
     private ObjectAccess? _selection = null;
     private ObjectAccess? _hover = null;
@@ -61,18 +61,18 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
     public override void Update(bool hasFocus)
     {
         _hoverSet = false;
-        var track = Window.Track;
+        var track = View.Track;
         if (_actorsLayer)
             for (int i = 0; i < track.Actors.Count; i++){
-                UpdateObject(Window.Track.Actors[i], new ObjectAccess(track.Actors, i));
+                UpdateObject(View.Track.Actors[i], new ObjectAccess(track.Actors, i));
             }
         if (_boxesLayer)
             for (int i = 0; i < track.ItemBoxes.Count; i++) {
-                UpdateObject(Window.Track.ItemBoxes[i], new ObjectAccess(track.ItemBoxes, i));    
+                UpdateObject(View.Track.ItemBoxes[i], new ObjectAccess(track.ItemBoxes, i));    
             }
         if (_positionsLayer)
             for (int i = 0; i < track.Positions.Count; i++){
-                UpdateObject(Window.Track.Positions[i], new ObjectAccess(track.Positions, i));
+                UpdateObject(View.Track.Positions[i], new ObjectAccess(track.Positions, i));
             }
         if (!_hoverSet) _hover = null;
         UpdateDrag();
@@ -81,11 +81,11 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
     private void UpdateObject(GameObject obj, ObjectAccess access) {
         Color color = GetIdColor(obj.Id);
         ImGui.GetWindowDrawList().AddCircleFilled(
-            Window.TileToWindow(obj.Position),
-             4 * Window.Scale,
+            View.TileToWindow(obj.Position),
+             4 * View.Scale,
               color.PackedValue
         );
-        if (Window.Rectangle(
+        if (View.Rectangle(
             obj.Position + new Point(-2, -4), 
             obj.Position + new Point(2, 0),
             color,
@@ -97,9 +97,9 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
                 _hover = access;
                 if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && ImGui.IsWindowHovered())
                 {
-                    _drag = new ObjDrag(access.List, access.index);
+                    _drag = new ObjDrag(access.List, access.Index);
                     _dragging = true;
-                    _drag.LastPosition = Window.HoveredTile;
+                    _drag.LastPosition = View.HoveredTile;
                 }
             }
         }
@@ -109,8 +109,8 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left)){
                 if (ImGui.IsWindowHovered())
                 {
-                    var delta = Window.HoveredTile - _drag.LastPosition;
-                    _drag.LastPosition = Window.HoveredTile;
+                    var delta = View.HoveredTile - _drag.LastPosition;
+                    _drag.LastPosition = View.HoveredTile;
 
                     _drag.ObjectsList[_drag.ObjectNumber].Position += delta;
                 }
@@ -122,9 +122,9 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
                 }
                 else
                 {
-                    for (var i = 0; i < Window.Track.AiSectors.Count; i++)
+                    for (var i = 0; i < View.Track.AiSectors.Count; i++)
                     {
-                        if (Window.Track.AiSectors[i].GetResizeHandle(_drag.ObjectsList[_drag.ObjectNumber].Position) != ResizeHandle.None)
+                        if (View.Track.AiSectors[i].GetResizeHandle(_drag.ObjectsList[_drag.ObjectNumber].Position) != ResizeHandle.None)
                         {
                             _drag.ObjectsList[_drag.ObjectNumber].Zone = (byte)i;
                         }
@@ -173,7 +173,7 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
         ImGui.SeparatorText("Properties");
         if (_selection is not null) {
             var selection = _selection.Value;
-            GameObject obj = selection.List[selection.index];
+            GameObject obj = selection.List[selection.Index];
             int id = obj.Id & 0b01111111;
             ImGui.InputInt("ID: ", ref id);
             id &= 0b01111111;
@@ -195,7 +195,7 @@ public class ObjectEditor(TilemapWindow window) : TrackEditor(window)
             }
             ImGui.SameLine();
             if (ImGui.Button("Delete Object") || ImGui.IsKeyPressed(ImGuiKey.Delete)){
-                selection.List.RemoveAt(selection.index);
+                selection.List.RemoveAt(selection.Index);
                 _selection = null;
             }
         } 

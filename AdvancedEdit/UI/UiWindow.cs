@@ -28,6 +28,5 @@ public abstract class UiWindow
     /// <summary>
     /// Draw the window, not including Imgui.Begin or End
     /// </summary>
-    /// <param name="hasFocus">Is the window focused by the user</param>
-    public abstract void Draw(bool hasFocus);
+    public abstract void Draw();
 }

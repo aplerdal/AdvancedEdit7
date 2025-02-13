@@ -44,7 +44,7 @@ public class Draw : TilemapEditorTool
     
     public override void Update(TilemapEditor editor)
     {
-        Point hoveredTile = editor.Window.HoveredTile;
+        Point hoveredTile = editor.View.HoveredTile;
 
         if (editor.ActiveTile is not null)
         {
@@ -52,11 +52,11 @@ public class Draw : TilemapEditorTool
             if (ImGui.IsMouseDown(ImGuiMouseButton.Left) && ImGui.IsWindowHovered())
             {
                 if (_drawAction is null) {
-                    _drawAction = new DrawAction(editor.Window.Track);
+                    _drawAction = new DrawAction(editor.View.Track);
                 } else {
                     if (!_drawAction.NewTiles.ContainsKey(hoveredTile))
                     {
-                        editor.Window.Track.Tilemap.DrawTile(hoveredTile, tile);
+                        editor.View.Track.Tilemap.DrawTile(hoveredTile, tile);
                         _drawAction.NewTiles.Add(hoveredTile, tile);
                     }
                 }
@@ -66,12 +66,12 @@ public class Draw : TilemapEditorTool
                 editor.UndoManager.Do(_drawAction);
                 _drawAction = null;
             }
-            var min = editor.Window.TileToWindow(hoveredTile);
-            var max = editor.Window.TileToWindow(hoveredTile+new Point(1));
+            var min = editor.View.TileToWindow(hoveredTile);
+            var max = editor.View.TileToWindow(hoveredTile+new Point(1));
             ImGui.SetCursorScreenPos(min);
             ImGui.Image(
-                editor.Window.Track.Tileset.TexturePtr,
-                new(8 * editor.Window.Scale),
+                editor.View.Track.Tileset.TexturePtr,
+                new(8 * editor.View.Scale),
                 new(tile / 256f, 0),
                 new(tile / 256f + 1 / 256f, 1)
             );

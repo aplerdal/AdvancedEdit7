@@ -14,8 +14,8 @@ public abstract class MapTool
     /// <summary>
     /// Update and draw the tool
     /// </summary>
-    /// <param name="window">The window the tool belongs to</param>
-    public abstract void Update(TilemapWindow window);
+    /// <param name="trackView">The window the tool belongs to</param>
+    public abstract void Update(TrackView trackView);
 }
 
 public abstract class TilemapEditorTool

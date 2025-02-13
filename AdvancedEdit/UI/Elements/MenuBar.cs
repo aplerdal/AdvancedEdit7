@@ -34,7 +34,7 @@ public static class MenuBar
                         var file = File.OpenRead(path);
                         AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file));
                         AdvancedEdit.Instance.TrackManager.RomPath = path;
-                        AdvancedEdit.Instance.UiManager.AddWindow(new TrackWindow(TrackManager.Tracks[29]));
+                        AdvancedEdit.Instance.UiManager.AddTrack(new TrackView(TrackManager.Tracks[29]));
                         file.Close();
                     }
                 }
@@ -68,16 +68,6 @@ public static class MenuBar
                 ImGui.Separator();
                 ImGui.MenuItem("Copy", "ctrl+c");
                 ImGui.MenuItem("Paste", "ctrl+v");
-                ImGui.EndMenu();
-            }
-
-            if (ImGui.BeginMenu("Window"))
-            {
-                ImGui.MenuItem("Debug Window", null, ref _debug);
-                if (ImGui.MenuItem("Track Selector"))
-                {
-                    AdvancedEdit.Instance.UiManager.AddWindow(new TrackSelector());
-                }
                 ImGui.EndMenu();
             }
 

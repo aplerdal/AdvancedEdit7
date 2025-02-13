@@ -114,7 +114,7 @@ public class TrackSelector : UiWindow {
     {
         return TracksList[Array.FindIndex(TrackSelector.TrackMapping, x => x == id)];
     }
-    public override void Draw(bool hasFocus)
+    public override void Draw()
     {
         if (AdvancedEdit.Instance.TrackManager == null)
         {
@@ -134,7 +134,7 @@ public class TrackSelector : UiWindow {
                                 var t = TrackManager.Tracks[
                                     TrackMapping[track+(cup+page*(CupsList.Length/PagesList.Length))*TracksList.Length/CupsList.Length]
                                 ];
-                                AdvancedEdit.Instance.UiManager.AddWindow(new TrackWindow(t));
+                                AdvancedEdit.Instance.UiManager.AddTrack(new TrackView(t));
                             }
                             ImGui.PopID();
                         }

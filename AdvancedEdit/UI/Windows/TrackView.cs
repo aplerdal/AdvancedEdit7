@@ -1,21 +1,23 @@
 using System;
-using System.Runtime.InteropServices;
+using System.Collections.Generic;
+using System.Collections.Immutable;
+using System.Linq;
 using AdvancedEdit.Serialization;
+using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Tools;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace AdvancedEdit.UI.Windows;
 
-public abstract class TilemapWindow(Track track) : UiWindow
+public class TrackView
 {
-    public override ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+    public ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
+    public bool IsOpen = true;
     /// <summary>
     /// The current active track
     /// </summary>
-    public Track Track = track;
+    public Track Track;
     /// <summary>
     /// The window position
     /// </summary>
@@ -50,7 +52,7 @@ public abstract class TilemapWindow(Track track) : UiWindow
     /// </summary>
     public Point HoveredTile => ((ImGui.GetMousePos() - MapPosition) / (8 * Scale)).ToPoint();
     
-    protected View View = new();
+    public View View = new();
 
     private IntPtr _mapPtr;
 
@@ -81,11 +83,22 @@ public abstract class TilemapWindow(Track track) : UiWindow
         DrawList.AddRect(TileToWindow(min), TileToWindow(max), color.PackedValue, 0, 0, 2.0f);
         return hov.X >= min.X && hov.X < max.X && hov.Y >= min.Y && hov.Y < max.Y;
     }
+    public string Name => TrackSelector.GetTrackName(Track.Id);
+    public string WindowId => "trackwindow";
     
-    public override void Draw(bool hasFocus)
+    private List<TrackEditor> _editors;
+    private int _activeEditor = -1;
+
+    public TrackView(Track track)
+    {
+        Track = track;
+        _editors = [new TilemapEditor(this), new AiEditor(this), new ObjectEditor(this)]; // Default editors
+    }
+
+    public void Draw(bool focused)
     {
         _drawList = ImGui.GetWindowDrawList();
-        
+
         WindowPosition = ImGui.GetWindowPos();
         WindowSize = ImGui.GetWindowSize();
 
@@ -98,9 +111,66 @@ public abstract class TilemapWindow(Track track) : UiWindow
         ImGui.SetCursorScreenPos(MapPosition.ToNumerics());
         ImGui.Image(_mapPtr, MapSize.ToNumerics());
         Hovered = ImGui.IsItemHovered();
+        
+        if (_activeEditor != -1)
+            _editors[_activeEditor].Update(focused);
+
+        if (focused)
+        {
+            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Z))
+                _editors[_activeEditor].UndoManager.Undo();
+            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Y))
+                _editors[_activeEditor].UndoManager.Redo();
+        }
+        
+        View.Update(this);
     }
 
-    ~TilemapWindow()
+    public void DrawInspector()
+    {
+        if (ImGui.BeginTabBar("ActiveEditor", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
+        {
+            if (ImGui.TabItemButton("+", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip))
+            {
+                ImGui.OpenPopup("windowTypeSelector");
+            }
+
+            if (ImGui.BeginPopup("windowTypeSelector"))
+            {
+                if (ImGui.Button("Ai Editor"))
+                {
+                    if (!_editors.Exists(x => x.Id == "aieditor"))
+                        _editors.Add(new AiEditor(this));
+                    ImGui.CloseCurrentPopup();
+                }
+
+                if (ImGui.Button("Tilemap Editor"))
+                {
+                    if (!_editors.Exists(x => x.Id == "tileeditor"))
+                        _editors.Add(new TilemapEditor(this));
+                    ImGui.CloseCurrentPopup();
+                }
+
+               
+                ImGui.EndPopup();
+            }
+
+            var list = _editors.ToImmutableList();
+            _activeEditor = -1;
+            for (var i = 0; i < list.Count; i++)
+            {
+                var editor = list[i];
+                if (ImGui.BeginTabItem(editor.Name))
+                {
+                    _activeEditor = i;
+                    editor.DrawInspector();
+                    ImGui.EndTabItem();
+                }
+            }
+        }
+    }
+
+    ~TrackView()
     {
         AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_mapPtr);
     }

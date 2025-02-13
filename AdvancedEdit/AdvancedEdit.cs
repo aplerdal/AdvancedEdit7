@@ -27,7 +27,7 @@ public class AdvancedEdit : Game
 
     public ImGuiRenderer ImGuiRenderer;
     public UiManager UiManager;
-    public TrackManager TrackManager;
+    public TrackManager? TrackManager;
 
     #pragma warning disable CS8618
     public AdvancedEdit()
@@ -56,11 +56,6 @@ public class AdvancedEdit : Game
     protected override void LoadContent()
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
-        //var track = new Track(
-        //    new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 27, 0x0000, 0x29FC74);
-        //UiManager.AddWindow(new MapEditor(track));
-        //UiManager.AddWindow(new AiEditor(track));
-        UiManager.AddWindow(new TrackSelector());
 
         base.LoadContent();
     }

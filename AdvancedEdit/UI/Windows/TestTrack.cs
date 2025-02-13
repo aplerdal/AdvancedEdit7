@@ -19,7 +19,7 @@ public class TestTrack : UiWindow
             0x283d04);
         _texture = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(track.Tilemap.TrackTexture);
     }
-    public override void Draw(bool hasFocus)
+    public override void Draw()
     {
         ImGui.Text("This is a test track view");
         ImGui.Image(_texture, new(1024, 1024));

@@ -1,15 +1,22 @@
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using AdvancedEdit.UI.Elements;
+using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 
 namespace AdvancedEdit.UI;
 
 public class UiManager
 {
-    LinkedList<UiWindow> _windows = new();
+    List<TrackView> _tracks = new();
+    
+    UiWindow _trackSelector = new TrackSelector();
+    
     private Dictionary<string, int> Ids = new();
-    private UiWindow? _focused = null;
+    
+    private int _activeTrack;
+
 
     /// <summary>
     /// Render and handle input for all windows from the current window list;
@@ -18,38 +25,53 @@ public class UiManager
     {
         ImGui.DockSpaceOverViewport();
         MenuBar.Draw();
-        foreach (var window in _windows.ToArray())
-        {
-            if (!window.IsOpen) _windows.Remove(window);
-            ImGui.Begin($"{window.Name}###{window.WindowId + window.Id}", ref window.IsOpen, window.Flags);
-            if (ImGui.IsWindowFocused())
-            {
-                _focused = window;
-            }
-            window.Draw(_focused == window);
-            ImGui.End();
-        }
 
-        if (_focused is IInspector inspector)
+        ImGui.Begin("Track Selector", ref _trackSelector.IsOpen, _trackSelector.Flags);
+        _trackSelector.Draw();
+        ImGui.End();
+
+        ImGui.Begin("Tracks", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        if (ImGui.BeginTabBar("track_bar", ImGuiTabBarFlags.Reorderable))
         {
-            ImGui.Begin("Inspector");
-            inspector.DrawInspector();
-            ImGui.End();
+            _activeTrack = -1;
+            for (var i = 0; i < _tracks.Count; i++)
+            {
+                var track = _tracks[i];
+                if (track.IsOpen && ImGui.BeginTabItem($"{track.Name}##{track.WindowId}", ref track.IsOpen, ImGuiTabItemFlags.None))
+                {
+                    Debug.Assert(_activeTrack == -1);
+                    _activeTrack = i;
+                    ImGui.Text("");
+                    ImGui.PushClipRect(ImGui.GetCursorPos(), ImGui.GetWindowPos()+ImGui.GetWindowSize(), true);
+                    track.Draw(true);
+                    ImGui.PopClipRect();
+                    ImGui.EndTabItem();
+                }
+
+                if (!track.IsOpen)
+                {
+                    _tracks.RemoveAt(i);
+                    i -= 1;
+                }
+            }
+
+            ImGui.EndTabBar();
         }
+        ImGui.End();
+
+        ImGui.Begin("Inspector");
+        if (_tracks.Count > 0 && _activeTrack >= 0)
+            _tracks[_activeTrack].DrawInspector();
+        ImGui.End();
         // if window is focused draw inspector and call update
     }
 
     /// <summary>
-    /// Add window to current context
+    /// Add track to current context
     /// </summary>
-    /// <param name="window">Window to be added</param>
-    public void AddWindow(UiWindow window)
+    /// <param name="track">Track to be added</param>
+    public void AddTrack(TrackView track)
     {
-        if (!Ids.ContainsKey(window.WindowId))
-            Ids[window.WindowId] = 0;
-        else 
-            Ids[window.WindowId]++;
-        window.Id = Ids[window.WindowId];
-        _windows.AddLast(window);
+        _tracks.Add(track);
     }
 }

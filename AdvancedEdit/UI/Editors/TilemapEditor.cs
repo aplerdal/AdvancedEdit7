@@ -17,12 +17,12 @@ public class TilemapEditor : TrackEditor
 
     public byte? ActiveTile = null;
 
-    public TilemapEditor(TilemapWindow window) : base(window)
+    public TilemapEditor(TrackView trackView) : base(trackView)
     {
         _tilePalette = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, 16 * 8, 16 * 8);
         Color[] data = new Color[16 * 8 * 16 * 8];
         Color[] newData = new Color[16 * 8 * 16 * 8];
-        window.Track.Tileset.Texture.GetData(data);
+        trackView.Track.Tileset.Texture.GetData(data);
         for (int tileY = 0; tileY < 16; tileY++)
         for (int tileX = 0; tileX < 16; tileX++)
         for (int y = 0; y < 8; y++)
