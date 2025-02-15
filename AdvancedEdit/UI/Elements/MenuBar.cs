@@ -13,7 +13,7 @@ public static class MenuBar
     /// <summary>
     /// File filter for gba files
     /// </summary>
-    public static readonly Dictionary<string, string> RomFilter = new Dictionary<string, string>() {{"MKSC Rom","gba"},{"All files","*"}};
+    public static readonly Dictionary<string, string> RomFilter = new() {{"MKSC Rom","gba"},{"All files","*"}};
     
     /// <summary>
     /// Render the menu bar

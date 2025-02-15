@@ -1,9 +1,11 @@
 using System;
+using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Tools;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using NativeFileDialogs.Net;
 
 namespace AdvancedEdit.UI.Editors;
 
@@ -11,25 +13,31 @@ public class TilemapEditor : TrackEditor
 {
     public override string Name => "Tilemap Editor";
     public override string Id => "tileeditor";
-    private TilemapEditorTool _activeTool = new Draw();
-    private Texture2D _tilePalette;
+    public TilemapEditorTool ActiveTool = new Draw();
     private IntPtr _palettePtr;
+    private Track _track;
 
     public byte? ActiveTile = null;
 
     public TilemapEditor(TrackView trackView) : base(trackView)
     {
-        _tilePalette = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, 16 * 8, 16 * 8);
+        _track = trackView.Track;
+        RegenAtlas();
+    }
+
+    private void RegenAtlas()
+    {
+        var tilePalette = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, 16 * 8, 16 * 8);
         Color[] data = new Color[16 * 8 * 16 * 8];
         Color[] newData = new Color[16 * 8 * 16 * 8];
-        trackView.Track.Tileset.Texture.GetData(data);
+        _track.Tileset.Texture.GetData(data);
         for (int tileY = 0; tileY < 16; tileY++)
         for (int tileX = 0; tileX < 16; tileX++)
         for (int y = 0; y < 8; y++)
         for (int x = 0; x < 8; x++)
             newData[x + y * 8 * 16 + tileX * 8 + tileY * 64 * 16] = data[x + y * 256 * 8 + (tileX + tileY * 16) * 8];
-        _tilePalette.SetData(newData);
-        _palettePtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(_tilePalette);
+        tilePalette.SetData(newData);
+        _palettePtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(tilePalette);
     }
 
     private const int TileDisplaySize = 16;
@@ -37,7 +45,7 @@ public class TilemapEditor : TrackEditor
     {
         if (hasFocus)
         {
-            _activeTool.Update(this); 
+            ActiveTool.Update(this); 
         }
     }
 
@@ -76,14 +84,41 @@ public class TilemapEditor : TrackEditor
                 3.0f
             );
         }
-
+        ImGui.SeparatorText("Tileset Options");
+        if (ImGui.Button("Load"))
+        {
+            // string? path;
+            // var status = Nfd.OpenDialog(out path);
+            // if (status == NfdStatus.Ok && path is not null)
+            // {
+            //     string error;
+            //     var gfx = Bitmap.Load(path, out error);
+            //     if (gfx is not null)
+            //     {
+            //         _track.Tileset = gfx;
+            //         RegenAtlas();
+            //         _track.Tilemap.Tileset = gfx.Texture;
+            //         _track.Tilemap.RegenMap();
+            //     }
+            //     else
+            //     {
+            //         ImGui.OpenPopup("Error loading image");
+            //         if (ImGui.BeginPopupModal("Error loading image"))
+            //         {
+            //             ImGui.Text(error);
+            //             ImGui.EndPopup();
+            //         }
+            //     }
+            // }
+        }
+        
         ImGui.SeparatorText("Tools");
         // TODO: Add tool icons / imagebuttons
-        if (ImGui.Button("Draw") || ImGui.IsKeyPressed(ImGuiKey.P)) {
-            _activeTool = new Draw();
+        if (ImGui.Button("Draw") || ImGui.IsKeyPressed(ImGuiKey.B)) {
+            ActiveTool = new Draw();
         }
         if (ImGui.Button("Eyedropper") || ImGui.IsKeyPressed(ImGuiKey.V)){
-            _activeTool = new Eyedropper();
+            ActiveTool = new Eyedropper();
         }
 
         ImGui.Separator();

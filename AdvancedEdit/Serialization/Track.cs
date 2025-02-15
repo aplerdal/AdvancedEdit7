@@ -24,7 +24,7 @@ public class Track
     public Tilemap Tilemap;
     private byte[] _minimap;
     
-    private GameGfx? _tileset;
+    public GameGfx? _tileset;
     public GameGfx Tileset
     {
         get
@@ -34,21 +34,26 @@ public class Track
             // Should be read from defintion index iirc
             return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
         }
-        set => _tileset = value;
+        set {
+            _tileset = value;
+            ReusedTileset = 0;
+        }
     }
     public List<AiSector> AiSectors = new List<AiSector>(); // Linked list so rearranging and removing is faster
 
-    private GameGfx? _actorGfx;
-    public GameGfx? ActorGfx
-    {
-        get
-        {
-            if (_actorGfx is not null) return _actorGfx;
-            if (ReusedActorGfx == 0) return null; // No actor gfx in scene
-            return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ActorGfx;
-        }
-        set => _actorGfx = value;
-    }
+    // private GameGfx[]? _actorGfx;
+    // public GameGfx[]? ActorGfx
+    // {
+    //     get
+    //     {
+    //         if (_actorGfx is not null) return _actorGfx;
+    //         if (ReusedActorGfx == 0) return null; // No actor gfx in scene
+    //         return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ActorGfx;
+    //     }
+    //     set => _actorGfx = value;
+    // }
+    public byte[]? ActorGfxData;
+    public Color[][]? ActorGfxPalettes;
     
     /// <summary>
     /// Track size in tiles
@@ -163,7 +168,7 @@ public class Track
         } else if (Flags.HasFlag(TrackFlags.SplitTileset))
         {
             long pos = tilesetAddress;
-            byte[] indicies = new byte[4096*4];
+            byte[] indices = new byte[4096*4];
             for (int i = 0; i < 4; i++)
             {
                 reader.BaseStream.Seek(pos, SeekOrigin.Begin);
@@ -174,10 +179,10 @@ public class Track
                     var partAddress = tilesetAddress + offset;
                     reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
                     byte[] data = Lz10.Decompress(reader).ToArray();
-                    Array.Copy(data, 0, indicies, i*4096, 4096);
+                    Array.Copy(data, 0, indices, i*4096, 4096);
                 }
             }
-            Tileset = new GameGfx(indicies, tilePalette);
+            Tileset = new GameGfx(indices, tilePalette);
         }
         else
         {
@@ -191,7 +196,7 @@ public class Track
         if (Flags.HasFlag(TrackFlags.SplitLayout))
         {
             uint pos = layoutAddress;
-            byte[] indicies = new byte[4096*16];
+            byte[] indices = new byte[4096*16];
             for (int i = 0; i < 16; i++)
             {
                 reader.BaseStream.Seek(pos, SeekOrigin.Begin);
@@ -203,11 +208,11 @@ public class Track
                     
                     reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
                     var data = Lz10.Decompress(reader).ToArray();
-                    Array.Copy(data, 0, indicies, i*4096, 4096);
+                    Array.Copy(data, 0, indices, i*4096, 4096);
                 }
             }
             
-            Tilemap = new Tilemap(Size, Tileset.Texture, indicies);
+            Tilemap = new Tilemap(Size, Tileset.Texture, indices);
         }
         else
         {
@@ -243,18 +248,28 @@ public class Track
         #endregion
 
         #region Load Actor GFX
-
-        Color[] actorPalette = new Color[24];
         
         if (paletteAddress != headerAddress)
         {
+            Color[][] actorPalettes = new Color[4][];
             reader.BaseStream.Seek(actorPaletteAddress, SeekOrigin.Begin);
-            for (int i = 0; i < 24; i++)
-                actorPalette[i] = new BgrColor(reader.ReadUInt16()).ToColor();
+            for (int pal = 0; pal < 4; pal++)
+            {
+                actorPalettes[pal] = new Color[16];
+                for (int i = 0; i < 16; i++)
+                    actorPalettes[pal][i] = new BgrColor(reader.ReadUInt16()).ToColor();
+            }
+
+            ActorGfxPalettes = actorPalettes;
         }
+        else
+        {
+            ActorGfxPalettes = null;
+        }
+        
         if (ReusedActorGfx != 0)
         {
-            _actorGfx = null;
+            ActorGfxData = null;
         }
         else
         {
@@ -264,12 +279,12 @@ public class Track
                 {
                     reader.BaseStream.Seek(actorGfxAddress, SeekOrigin.Begin);
                     var data = Lz10.Decompress(reader).ToArray();
-                    ActorGfx = new GameGfx(GameGfx.IndicesFrom4Bpp(data), actorPalette);
+                    ActorGfxData = data;
                 }
                 else
                 {
                     long pos = actorGfxAddress;
-                    byte[] indicies = new byte[1024 * 2];
+                    byte[] indices = new byte[4096 * 2];
                     for (int i = 0; i < 2; i++)
                     {
                         reader.BaseStream.Seek(pos, SeekOrigin.Begin);
@@ -279,11 +294,12 @@ public class Track
                         {
                             var partAddress = actorGfxAddress + offset;
                             reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
-                            byte[] data = Lz10.Decompress(reader).ToArray();
-                            Array.Copy(data, 0, indicies, i * 1024, 1024);
+                            var data = Lz10.Decompress(reader).ToArray();
+                            Array.Copy(data, 0, indices, 4096*i, data.Length);
                         }
                     }
-                    ActorGfx = new GameGfx(indicies, actorPalette);
+
+                    ActorGfxData = indices;
                 }
             }
         }
@@ -457,7 +473,7 @@ public class Track
         uint tilesetOffset = pos;
         Debug.Assert(writer.BaseStream.Position == header + tilesetOffset);
         {
-            byte[] tmp = Tileset.GetIndicies();
+            byte[] tmp = Tileset.Indices;
             Debug.Assert(tmp.Length == 16384);
             
             Flags |= TrackFlags.SplitTileset;
@@ -554,11 +570,11 @@ public class Track
 
         uint actorGfxOffset = 0;
         uint actorPalOffset = 0;
-        if (!(ActorGfx is null && ReusedActorGfx == 0))
+        if (ReusedActorGfx == 0 && ActorGfxData != null)
         {
             actorGfxOffset = pos;
             Debug.Assert(writer.BaseStream.Position == header + actorGfxOffset);
-            byte[] tmp = GameGfx.IndicesTo4Bpp(ActorGfx!.GetIndicies());
+            byte[] tmp = ActorGfxData!;
             if (tmp.Length <= 4096)
             {
                 Flags &= ~TrackFlags.SplitActorGfx;
@@ -597,17 +613,21 @@ public class Track
             actorPalOffset = pos;
             Debug.Assert(writer.BaseStream.Position == header + actorPalOffset);
             {
-                var palette = ActorGfx.Palette;
-                byte[] data = new byte[palette.Length * 2];
-                for (int i = 0; i < palette.Length * 2; i += 2)
+                var palettes = ActorGfxPalettes!;
+                for (int i = 0; i < 4; i++)
                 {
-                    var col = BitConverter.GetBytes(new BgrColor(palette[i / 2]).Raw);
-                    data[i] = col[0];
-                    data[i + 1] = col[1];
-                }
+                    var palette = palettes[i];
+                    byte[] data = new byte[palette.Length * 2];
+                    for (int j = 0; j < palette.Length * 2; j += 2)
+                    {
+                        var col = BitConverter.GetBytes(new BgrColor(palette[j / 2]).Raw);
+                        data[j] = col[0];
+                        data[j + 1] = col[1];
+                    }
 
-                writer.Write(data);
-                pos += (uint)data.Length;
+                    writer.Write(data);
+                    pos += (uint)data.Length;
+                }
             }
         }
         #endregion

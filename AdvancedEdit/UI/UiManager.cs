@@ -52,6 +52,7 @@ public class UiManager
                 {
                     _tracks.RemoveAt(i);
                     i -= 1;
+                    _activeTrack = -1;
                 }
             }
 
