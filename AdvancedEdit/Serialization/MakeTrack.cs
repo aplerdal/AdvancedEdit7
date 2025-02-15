@@ -41,7 +41,14 @@ namespace AdvancedEdit.Serialization
     /// </summary>
     public class MakeTrack
     {
-        Dictionary<string, byte[]> _fields = new Dictionary<string, byte[]>();
+        public int ItemProbabilityIndex
+        {
+            get => EEItemProba[1] >> 1;
+            set => EEItemProba = new byte[] { 0, (byte)(value << 1) };
+        }
+
+        private readonly Dictionary<string, byte[]> _fields;
+
         public byte[] this[string name]
         {
             get => _fields[name];
@@ -49,12 +56,217 @@ namespace AdvancedEdit.Serialization
             {
                 if (!_fields.ContainsKey(name))
                 {
-                    _fields.Add(name, value);
+                    _fields.Add(name, null);
                 }
+
                 _fields[name] = value;
             }
         }
-        
+
+        /// <summary>
+        /// GP Start Position X.
+        /// </summary>
+        private byte[] SpStx
+        {
+            get => this["SP_STX"];
+            set => this["SP_STX"] = value;
+        }
+
+        /// <summary>
+        /// GP Start Position Y.
+        /// </summary>
+        private byte[] SpSty
+        {
+            get => this["SP_STY"];
+            set => this["SP_STY"] = value;
+        }
+
+        /// <summary>
+        /// GP Start Position Width (2nd Row Offset).
+        /// </summary>
+        private byte[] SpStw
+        {
+            get => this["SP_STW"];
+            set => this["SP_STW"] = value;
+        }
+
+        /// <summary>
+        /// Lap Line Area X.
+        /// </summary>
+        private byte[] SpLspx
+        {
+            get => this["SP_LSPX"];
+            set => this["SP_LSPX"] = value;
+        }
+
+        /// <summary>
+        /// Lap Line Area Y.
+        /// </summary>
+        private byte[] SpLspy
+        {
+            get => this["SP_LSPY"];
+            set => this["SP_LSPY"] = value;
+        }
+
+        /// <summary>
+        /// Lap Line Area Width.
+        /// </summary>
+        private byte[] SpLspw
+        {
+            get => this["SP_LSPW"];
+            set => this["SP_LSPW"] = value;
+        }
+
+        /// <summary>
+        /// Lap Line Area Height.
+        /// </summary>
+        private byte[] SpLsph
+        {
+            get => this["SP_LSPH"];
+            set => this["SP_LSPH"] = value;
+        }
+
+        /// <summary>
+        /// Lap Line Y.
+        /// </summary>
+        private byte[] SpLsly
+        {
+            get => this["SP_LSLY"];
+            set => this["SP_LSLY"] = value;
+        }
+
+        /// <summary>
+        /// Theme.
+        /// </summary>
+        private byte[] SpRegion
+        {
+            get => this["SP_REGION"];
+            set => this["SP_REGION"] = value;
+        }
+
+        /// <summary>
+        /// Battle Starting Position for Player 1.
+        /// </summary>
+        private byte[] EEBattleStart1
+        {
+            get => this["EE_BATTLESTART1"];
+            set => this["EE_BATTLESTART1"] = value;
+        }
+
+        /// <summary>
+        /// Battle Starting Position for Player 2.
+        /// </summary>
+        private byte[] EEBattleStart2
+        {
+            get => this["EE_BATTLESTART2"];
+            set => this["EE_BATTLESTART2"] = value;
+        }
+
+        /// <summary>
+        /// Object Tileset.
+        /// </summary>
+        private byte[] EEObjTileset
+        {
+            get => this["EE_OBJTILESET"];
+            set => this["EE_OBJTILESET"] = value;
+        }
+
+        /// <summary>
+        /// Object Interaction.
+        /// </summary>
+        private byte[] EEObjInteract
+        {
+            get => this["EE_OBJINTERACT"];
+            set => this["EE_OBJINTERACT"] = value;
+        }
+
+        /// <summary>
+        /// Object Routine.
+        /// </summary>
+        private byte[] EEObjRoutine
+        {
+            get => this["EE_OBJROUTINE"];
+            set => this["EE_OBJROUTINE"] = value;
+        }
+
+        /// <summary>
+        /// Object Palettes.
+        /// </summary>
+        private byte[] EEObjPalettes
+        {
+            get => this["EE_OBJPALETTES"];
+            set => this["EE_OBJPALETTES"] = value;
+        }
+
+        /// <summary>
+        /// Object Flashing.
+        /// </summary>
+        private byte[] EEObjFlashing
+        {
+            get => this["EE_OBJFLASHING"];
+            set => this["EE_OBJFLASHING"] = value;
+        }
+
+        /// <summary>
+        /// Item probability set index.
+        /// </summary>
+        private byte[] EEItemProba
+        {
+            get => this["EE_ITEMPROBA"];
+            set => this["EE_ITEMPROBA"] = value;
+        }
+
+        // Object Behavior.
+        // NOTE: Data ignored by Epic Edit, supported differently.
+        // private byte[] SP_OPN;
+
+        /// <summary>
+        /// Tile Map.
+        /// </summary>
+        private byte[] MapBytes
+        {
+            get => this["MAP"];
+            set => this["MAP"] = value;
+        }
+
+        // NOTE: Data ignored by Epic Edit, supported differently.
+        // private byte[] MapMask;
+
+        /// <summary>
+        /// Overlay Tiles.
+        /// </summary>
+        private byte[] Gpex
+        {
+            get => this["GPEX"];
+            set => this["GPEX"] = value;
+        }
+
+        /// <summary>
+        /// AI.
+        /// </summary>
+        private byte[] Area
+        {
+            get => this["AREA"];
+            set => this["AREA"] = value;
+        }
+
+        /// <summary>
+        /// Objects.
+        /// </summary>
+        private byte[] Obj
+        {
+            get => this["OBJ"];
+            set => this["OBJ"] = value;
+        }
+
+        /// <summary>
+        /// Object View Areas.
+        /// </summary>
+        private byte[] AreaBorder
+        {
+            get => this["AREA_BORDER"];
+            set => this["AREA_BORDER"] = value;
+        }
         public List<AiSector> Ai {get=>GetAi();}
         
         /// <summary>
@@ -62,6 +274,9 @@ namespace AdvancedEdit.Serialization
         /// </summary>
         public MakeTrack(string filePath)
         {
+            _fields = new Dictionary<string, byte[]>();
+            InitData();
+            
             using (var fs = File.Open(filePath, FileMode.Open, FileAccess.Read))
             using (TextReader reader = new StreamReader(fs))
             {
@@ -91,7 +306,50 @@ namespace AdvancedEdit.Serialization
                 }
             }
         }
-        public List<AiSector> GetAi(){
+
+        private void InitData()
+        {
+            SpStx = new byte[2];
+            SpSty = new byte[2];
+            SpStw = new byte[2];
+            SpLspx = new byte[2];
+            SpLspy = new byte[2];
+            SpLspw = new byte[2];
+            SpLsph = new byte[2];
+            SpLsly = new byte[2];
+            SpRegion = [0, 2];
+
+            // EEBattleStart1 = [0x00, 0x02, 0x78, 0x02];
+            // EEBattleStart2 = [0x00, 0x02, 0x88, 0x01];
+            // EEObjTileset = new byte[2];
+            // EEObjInteract = new byte[2];
+            // EEObjRoutine = new byte[2];
+            // EEObjPalettes = new byte[4];
+            // EEObjFlashing = new byte[2];
+            // EEItemProba = new byte[2];
+
+            MapBytes = new byte[128*128];
+            
+            var area = new byte[4064];
+            for (var i = 0; i < area.Length; i++)
+            {
+                area[i] = 0xFF;
+            }
+
+            Area = area;
+        }
+        /// <summary>
+        /// Load SMK track over mksc one. Does not override tileset.
+        /// </summary>
+        /// <param name="track"></param>
+        public void LoadOverTrack(ref Track track)
+        {
+            track.Size = new Point(128, 128); // All SMK tracks have this size
+            track.Tilemap.Layout = GetLayout();
+            track.Tilemap.RegenMap();
+            track.AiSectors = GetAi();
+        }
+        private List<AiSector> GetAi(){
             List<AiSector> ai = new();
             var aiData = this["AREA"]; // One AI Sector per line
             var count = aiData.Length / 32;
@@ -106,11 +364,11 @@ namespace AdvancedEdit.Serialization
 
                 // Probably doing this wrong
                 ZoneShape shape = aiData[lineOffset + 16] switch {
-                    0b0001=>ZoneShape.Rectangle,
-                    0b0010=>ZoneShape.TopLeft,
-                    0b0100=>ZoneShape.TopRight,
-                    0b1000=>ZoneShape.BottomLeft,
-                    0b10000=>ZoneShape.BottomRight,
+                    0=>ZoneShape.Rectangle,
+                    2=>ZoneShape.TopLeft,
+                    4=>ZoneShape.TopRight,
+                    8=>ZoneShape.BottomLeft,
+                    6=>ZoneShape.BottomRight,
                     _=>throw new Exception("Error reading AI"),
                 };
                 Rectangle zone = new Rectangle(
@@ -122,6 +380,19 @@ namespace AdvancedEdit.Serialization
                 ai.Add(new AiSector([target,target,target], shape, zone, [speed, speed, speed], [intersection,intersection,intersection]));
             }
             return ai;
+        }
+
+        private byte[,] GetLayout()
+        {
+            var indices = this["MAP"];
+            byte[,] layout = new byte[128, 128];
+            for (int y = 0; y < 128; y++)
+            for (int x = 0; x < 128; x++)
+            {
+                layout[x, y] = indices[y * 128 + x];
+            }
+
+            return layout;
         }
         private static void LoadLineData(byte[] data, string line)
         {

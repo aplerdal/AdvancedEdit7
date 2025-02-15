@@ -7,12 +7,12 @@ using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Tools;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
+using NativeFileDialogs.Net;
 
 namespace AdvancedEdit.UI.Windows;
 
 public class TrackView
 {
-    public ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
     public bool IsOpen = true;
     /// <summary>
     /// The current active track
@@ -97,6 +97,26 @@ public class TrackView
 
     public void Draw(bool focused)
     {
+        if (ImGui.BeginMenuBar())
+        {
+            if (ImGui.BeginMenu("File"))
+            {
+                if (ImGui.MenuItem("Import smkc"))
+                {
+                    string? path;
+                    var status = Nfd.OpenDialog(out path, MenuBar.RomFilter, null);
+                    if (status == NfdStatus.Ok && path is not null)
+                    {
+                        var makeTrack = new MakeTrack(path);
+                        makeTrack.LoadOverTrack(ref Track);
+                    }
+                }
+
+                ImGui.EndMenu();
+            }
+
+            ImGui.EndMenuBar();
+        }
         _drawList = ImGui.GetWindowDrawList();
 
         WindowPosition = ImGui.GetWindowPos();

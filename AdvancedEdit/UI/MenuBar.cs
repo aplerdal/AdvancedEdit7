@@ -5,7 +5,7 @@ using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 using NativeFileDialogs.Net;
 
-namespace AdvancedEdit.UI.Elements;
+namespace AdvancedEdit.UI;
 
 public static class MenuBar
 {
@@ -53,6 +53,7 @@ public static class MenuBar
                         ImGui.OpenPopup("saved");
                     }
                 }
+                
                 ImGui.Separator();
                 ImGui.MenuItem("Open Project", "ctrl+shift+o");
                 ImGui.MenuItem("Save Project", "ctrl+shift+s");

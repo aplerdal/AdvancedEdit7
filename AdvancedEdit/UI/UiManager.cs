@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using AdvancedEdit.UI.Elements;
+using AdvancedEdit.UI;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
 
@@ -30,7 +30,7 @@ public class UiManager
         _trackSelector.Draw();
         ImGui.End();
 
-        ImGui.Begin("Tracks", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        ImGui.Begin("Tracks", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.MenuBar);
         if (ImGui.BeginTabBar("track_bar", ImGuiTabBarFlags.Reorderable))
         {
             _activeTrack = -1;
