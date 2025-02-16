@@ -138,6 +138,14 @@ public class ImGuiRenderer
         }
 
         /// <summary>
+        /// Updates an existing texture pointer to a new texture.
+        /// </summary>
+        public void UpdateTexture(IntPtr textureId, Texture2D texture)
+        {
+            _loadedTextures[textureId] = texture;
+        }
+
+        /// <summary>
         /// Sets up ImGui for a new frame, should be called at frame start
         /// </summary>
         public void BeforeLayout(GameTime gameTime)

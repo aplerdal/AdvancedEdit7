@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Tools;
 using AdvancedEdit.UI.Windows;
@@ -6,6 +8,7 @@ using ImGuiNET;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NativeFileDialogs.Net;
+using Hjg.Pngcs;
 
 namespace AdvancedEdit.UI.Editors;
 
@@ -37,7 +40,14 @@ public class TilemapEditor : TrackEditor
         for (int x = 0; x < 8; x++)
             newData[x + y * 8 * 16 + tileX * 8 + tileY * 64 * 16] = data[x + y * 256 * 8 + (tileX + tileY * 16) * 8];
         tilePalette.SetData(newData);
-        _palettePtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(tilePalette);
+        if (_palettePtr == IntPtr.Zero)
+        {
+            _palettePtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(tilePalette);
+        }
+        else
+        {
+            AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_palettePtr, tilePalette);
+        }
     }
 
     private const int TileDisplaySize = 16;
@@ -87,33 +97,25 @@ public class TilemapEditor : TrackEditor
         ImGui.SeparatorText("Tileset Options");
         if (ImGui.Button("Load"))
         {
-            // string? path;
-            // var status = Nfd.OpenDialog(out path);
-            // if (status == NfdStatus.Ok && path is not null)
-            // {
-            //     string error;
-            //     var gfx = Bitmap.Load(path, out error);
-            //     if (gfx is not null)
-            //     {
-            //         _track.Tileset = gfx;
-            //         RegenAtlas();
-            //         _track.Tilemap.Tileset = gfx.Texture;
-            //         _track.Tilemap.RegenMap();
-            //     }
-            //     else
-            //     {
-            //         ImGui.OpenPopup("Error loading image");
-            //         if (ImGui.BeginPopupModal("Error loading image"))
-            //         {
-            //             ImGui.Text(error);
-            //             ImGui.EndPopup();
-            //         }
-            //     }
-            // }
+            string? path;
+            var status = Nfd.OpenDialog(out path);
+            if (status == NfdStatus.Ok && path is not null)
+            {
+                try
+                {
+                    _track.Tileset = GameGfx.FromPng(path);
+                }
+                catch (ArgumentException e)
+                {
+                    // TODO: Error messages
+                }
+                RegenAtlas();
+                _track.Tilemap.Tileset = _track.Tileset.Texture;
+                _track.Tilemap.RegenMap();
+            }
         }
         
         ImGui.SeparatorText("Tools");
-        // TODO: Add tool icons / imagebuttons
         if (ImGui.Button("Draw") || ImGui.IsKeyPressed(ImGuiKey.B)) {
             ActiveTool = new Draw();
         }

@@ -54,9 +54,8 @@ public class Tilemap
     {
         if (TrackTexture.Width != Layout.GetLength(0) || TrackTexture.Height != Layout.GetLength(1))
         {
-            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache);
-            _texturePtrCache = IntPtr.Zero;
             TrackTexture = new RenderTarget2D(AdvancedEdit.Instance.GraphicsDevice, Layout.GetLength(0) * 8, Layout.GetLength(1) * 8, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_texturePtrCache, TrackTexture);
         }
         AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);
         AdvancedEdit.Instance.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,

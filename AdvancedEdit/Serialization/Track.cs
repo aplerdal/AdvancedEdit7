@@ -24,7 +24,7 @@ public class Track
     public Tilemap Tilemap;
     private byte[] _minimap;
     
-    public GameGfx? _tileset;
+    private GameGfx? _tileset;
     public GameGfx Tileset
     {
         get
