@@ -104,7 +104,7 @@ public class TrackView
                 if (ImGui.MenuItem("Import smkc"))
                 {
                     string? path;
-                    var status = Nfd.OpenDialog(out path, MenuBar.RomFilter, null);
+                    var status = Nfd.OpenDialog(out path, MakeTrack.FileFilter, null);
                     if (status == NfdStatus.Ok && path is not null)
                     {
                         var makeTrack = new MakeTrack(path);
@@ -125,11 +125,8 @@ public class TrackView
         MapPosition = WindowPosition + Translation;
         MapSize = new Vector2(Track.Size.X, Track.Size.Y) * 8 * Scale;
 
-        if (_mapPtr == IntPtr.Zero)
-            _mapPtr = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Track.Tilemap.TrackTexture);
-
         ImGui.SetCursorScreenPos(MapPosition.ToNumerics());
-        ImGui.Image(_mapPtr, MapSize.ToNumerics());
+        ImGui.Image(Track.Tilemap.TexturePtr, MapSize.ToNumerics());
         Hovered = ImGui.IsItemHovered();
         
         if (_activeEditor != -1)

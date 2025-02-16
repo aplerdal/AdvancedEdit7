@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -10,6 +12,17 @@ public class Tilemap
     public byte[,] Layout;
     public Texture2D Tileset;
 
+    public IntPtr TexturePtr
+    {
+        get
+        {
+            if (_texturePtrCache == IntPtr.Zero)
+                _texturePtrCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(TrackTexture);
+            return _texturePtrCache;
+        }
+    }
+    private IntPtr _texturePtrCache = IntPtr.Zero;
+
     public Tilemap(Point trackSize, Texture2D tileset, byte[] indices)
     {
         Tileset = tileset;
@@ -18,7 +31,7 @@ public class Tilemap
         Layout = new byte[trackSize.X, trackSize.Y];
         
         // Read the track in
-        for (int y = 0; y<trackSize.Y; y++)
+        for (int y = 0; y < trackSize.Y; y++)
         for (int x = 0; x < trackSize.X; x++)
             Layout[x, y] = indices[x + y * trackSize.Y];
         TrackTexture = new RenderTarget2D(AdvancedEdit.Instance.GraphicsDevice, trackSize.X * 8, trackSize.Y * 8, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
@@ -39,6 +52,12 @@ public class Tilemap
 
     public void RegenMap()
     {
+        if (TrackTexture.Width != Layout.GetLength(0) || TrackTexture.Height != Layout.GetLength(1))
+        {
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache);
+            _texturePtrCache = IntPtr.Zero;
+            TrackTexture = new RenderTarget2D(AdvancedEdit.Instance.GraphicsDevice, Layout.GetLength(0) * 8, Layout.GetLength(1) * 8, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+        }
         AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);
         AdvancedEdit.Instance.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
             samplerState: SamplerState.PointClamp);
@@ -79,5 +98,11 @@ public class Tilemap
             new Rectangle(value * 8, 0, 8, 8), Color.White);
         AdvancedEdit.Instance.SpriteBatch.End();
         AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(null);
+    }
+
+    ~Tilemap()
+    {
+        if (_texturePtrCache != IntPtr.Zero)
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache);
     }
 }

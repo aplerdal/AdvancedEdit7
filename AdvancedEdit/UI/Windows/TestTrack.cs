@@ -10,23 +10,16 @@ public class TestTrack : UiWindow
     public override string Name { get => "Test Track"; }
     public override string WindowId => "testtrack";
     public override ImGuiWindowFlags Flags => ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse;
-    Track track;
-    private IntPtr _texture;
+    Track _track;
 
     public TestTrack()
     {
-        track = new Track(new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 25, 0x0000,
+        _track = new Track(new BinaryReader(File.OpenRead("/home/aplerdal/Development/Mksc/mksc.gba")), 25, 0x0000,
             0x283d04);
-        _texture = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(track.Tilemap.TrackTexture);
     }
     public override void Draw()
     {
         ImGui.Text("This is a test track view");
-        ImGui.Image(_texture, new(1024, 1024));
-    }
-
-    ~TestTrack()
-    {
-        AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texture);
+        ImGui.Image(_track.Tilemap.TexturePtr, new(1024, 1024));
     }
 }

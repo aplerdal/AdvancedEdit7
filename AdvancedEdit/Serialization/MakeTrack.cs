@@ -13,19 +13,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.*/
 #endregion
 // Modified from Epic Edit's implementation.
 
-/*
-MAKE param names:
-SP_STX, SP_STY = gp position start x and y
-SP_STW, = gp position 2nd row offset
-
-EE_OBJTILESET = obj tileset, might be EE specific
-EE_OBJPALETTES = obj palettes
-
-MAP = track map
-AREA = Ai (zones?)
-OBJ = Objects
-*/
-
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -41,6 +28,8 @@ namespace AdvancedEdit.Serialization
     /// </summary>
     public class MakeTrack
     {
+        public static readonly Dictionary<string, string> FileFilter = new()
+            { { "SMK Track", "smkc" }, { "All files", "*" } };
         public int ItemProbabilityIndex
         {
             get => EEItemProba[1] >> 1;
@@ -63,10 +52,7 @@ namespace AdvancedEdit.Serialization
             }
         }
 
-        /// <summary>
-        /// GP Start Position X.
-        /// </summary>
-        private byte[] SpStx
+        private byte[] StartPosX
         {
             get => this["SP_STX"];
             set => this["SP_STX"] = value;
@@ -75,16 +61,13 @@ namespace AdvancedEdit.Serialization
         /// <summary>
         /// GP Start Position Y.
         /// </summary>
-        private byte[] SpSty
+        private byte[] StartPosY
         {
             get => this["SP_STY"];
             set => this["SP_STY"] = value;
         }
 
-        /// <summary>
-        /// GP Start Position Width (2nd Row Offset).
-        /// </summary>
-        private byte[] SpStw
+        private byte[] RowOffset
         {
             get => this["SP_STW"];
             set => this["SP_STW"] = value;
@@ -309,9 +292,9 @@ namespace AdvancedEdit.Serialization
 
         private void InitData()
         {
-            SpStx = new byte[2];
-            SpSty = new byte[2];
-            SpStw = new byte[2];
+            StartPosX = new byte[2];
+            StartPosY = new byte[2];
+            RowOffset = new byte[2];
             SpLspx = new byte[2];
             SpLspy = new byte[2];
             SpLspw = new byte[2];
@@ -348,6 +331,9 @@ namespace AdvancedEdit.Serialization
             track.Tilemap.Layout = GetLayout();
             track.Tilemap.RegenMap();
             track.AiSectors = GetAi();
+            track.Positions = GetPositions();
+            track.ItemBoxes = new List<GameObject>(); // We do not load item boxes, as they don't exist as objects in SMK
+            track.Actors = new List<GameObject>(); // Object gfx are not stored in this format and I don't want to deal with objects right now.
         }
         private List<AiSector> GetAi(){
             List<AiSector> ai = new();
@@ -374,8 +360,8 @@ namespace AdvancedEdit.Serialization
                 Rectangle zone = new Rectangle(
                     aiData[lineOffset + 17],
                     aiData[lineOffset + 18],
-                    aiData[lineOffset + 19],
-                    aiData[lineOffset + 20]
+                    aiData[lineOffset + 19]-1,
+                    aiData[lineOffset + 20]-1
                 );
                 ai.Add(new AiSector([target,target,target], shape, zone, [speed, speed, speed], [intersection,intersection,intersection]));
             }
@@ -393,6 +379,29 @@ namespace AdvancedEdit.Serialization
             }
 
             return layout;
+        }
+
+        private List<GameObject> GetPositions()
+        {
+            List<GameObject> positions = new();
+            Point startPosition = new Point((StartPosX[0] << 8 | StartPosX[1])/8, (StartPosY[0] << 8 | StartPosY[1])/8);
+            int offset = (RowOffset[0] << 8 | RowOffset[1]) / 8;
+            // Load left side start positions
+            for (int i = 0; i < 4; i++)
+            {
+                positions.Add(new GameObject((byte)(0x81+i*2), startPosition + new Point(0, i*6), 0));
+            }
+            // Load right side start positions
+            for (int i = 0; i < 4; i++)
+            {
+                positions.Add(new GameObject((byte)(0x82 + i * 2), startPosition + new Point(offset, i * 6 + 3), 0));
+            }
+            // Load 2p start postions
+            positions.Add(new GameObject(0x89, startPosition + new Point(-1, -1), 0));
+            positions.Add(new GameObject(0x8A, startPosition + new Point(offset+1, -1), 0));
+            // Add extra unknown object ( maybe load from start line pos? )
+            positions.Add(new GameObject(0x8B, startPosition + new Point(-3, -4), 0));
+            return positions;
         }
         private static void LoadLineData(byte[] data, string line)
         {
