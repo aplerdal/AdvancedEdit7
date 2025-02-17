@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.Linq;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Editors;
@@ -54,8 +55,6 @@ public class TrackView
     
     public View View = new();
 
-    private IntPtr _mapPtr;
-
     private ImDrawListPtr DrawList => _drawList ?? throw new NullReferenceException("No active draw list!");
     private ImDrawListPtr? _drawList;
 
@@ -99,9 +98,9 @@ public class TrackView
     {
         if (ImGui.BeginMenuBar())
         {
-            if (ImGui.BeginMenu("File"))
+            if (ImGui.BeginMenu("Import"))
             {
-                if (ImGui.MenuItem("Import smkc"))
+                if (ImGui.MenuItem("Import .SMKC"))
                 {
                     string? path;
                     var status = Nfd.OpenDialog(out path, MakeTrack.FileFilter, null);
@@ -126,6 +125,7 @@ public class TrackView
         MapSize = new Vector2(Track.Size.X, Track.Size.Y) * 8 * Scale;
 
         ImGui.SetCursorScreenPos(MapPosition.ToNumerics());
+        Debug.Assert(Track.Tilemap.TexturePtr != IntPtr.Zero);
         ImGui.Image(Track.Tilemap.TexturePtr, MapSize.ToNumerics());
         Hovered = ImGui.IsItemHovered();
         
@@ -147,48 +147,18 @@ public class TrackView
     {
         if (ImGui.BeginTabBar("ActiveEditor", ImGuiTabBarFlags.Reorderable | ImGuiTabBarFlags.AutoSelectNewTabs))
         {
-            if (ImGui.TabItemButton("+", ImGuiTabItemFlags.Trailing | ImGuiTabItemFlags.NoTooltip))
-            {
-                ImGui.OpenPopup("windowTypeSelector");
-            }
-
-            if (ImGui.BeginPopup("windowTypeSelector"))
-            {
-                if (ImGui.Button("Ai Editor"))
-                {
-                    if (!_editors.Exists(x => x.Id == "aieditor"))
-                        _editors.Add(new AiEditor(this));
-                    ImGui.CloseCurrentPopup();
-                }
-
-                if (ImGui.Button("Tilemap Editor"))
-                {
-                    if (!_editors.Exists(x => x.Id == "tileeditor"))
-                        _editors.Add(new TilemapEditor(this));
-                    ImGui.CloseCurrentPopup();
-                }
-
-               
-                ImGui.EndPopup();
-            }
-
-            var list = _editors.ToImmutableList();
             _activeEditor = -1;
-            for (var i = 0; i < list.Count; i++)
+            for (var i = 0; i < _editors.Count; i++)
             {
-                var editor = list[i];
+                var editor = _editors[i];
                 if (ImGui.BeginTabItem(editor.Name))
                 {
+                    Debug.Assert(_activeEditor == -1);
                     _activeEditor = i;
                     editor.DrawInspector();
                     ImGui.EndTabItem();
                 }
             }
         }
-    }
-
-    ~TrackView()
-    {
-        AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_mapPtr);
     }
 }

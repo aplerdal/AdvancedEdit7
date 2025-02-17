@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using ImGuiNET;
 using Microsoft.Xna.Framework;
@@ -53,7 +54,7 @@ public class ImGuiRenderer
         private int _indexBufferSize;
 
         // Textures
-        private Dictionary<IntPtr, Texture2D> _loadedTextures;
+        private Dictionary<IntPtr, Texture2D> _loadedTextures { get; set; }
 
         private int _textureId;
         private IntPtr? _fontTextureId;
@@ -134,6 +135,7 @@ public class ImGuiRenderer
         /// </summary>
         public void UnbindTexture(IntPtr textureId)
         {
+            Debug.Assert(textureId != 0); // Don't remove font texture
             _loadedTextures.Remove(textureId);
         }
 
@@ -142,6 +144,7 @@ public class ImGuiRenderer
         /// </summary>
         public void UpdateTexture(IntPtr textureId, Texture2D texture)
         {
+            Debug.Assert(textureId != 0); // Don't override font texture
             _loadedTextures[textureId] = texture;
         }
 

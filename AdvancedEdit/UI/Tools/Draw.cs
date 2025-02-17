@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using AdvancedEdit.Serialization;
@@ -70,6 +71,7 @@ public class Draw : TilemapEditorTool
             var min = editor.View.TileToWindow(hoveredTile);
             var max = editor.View.TileToWindow(hoveredTile+new Point(1));
             ImGui.SetCursorScreenPos(min);
+            Debug.Assert(editor.View.Track.Tileset.TexturePtr != IntPtr.Zero);
             ImGui.Image(
                 editor.View.Track.Tileset.TexturePtr,
                 new(8 * editor.View.Scale),

@@ -89,7 +89,7 @@ public class ObjectEditor(TrackView trackView) : TrackEditor(trackView)
             obj.Position + new Point(-2, -4), 
             obj.Position + new Point(2, 0),
             color,
-            access == _hover)
+            access == _hover || _selection == access)
         ) 
         {
             if (!_dragging) {
@@ -124,9 +124,9 @@ public class ObjectEditor(TrackView trackView) : TrackEditor(trackView)
                 {
                     for (var i = 0; i < View.Track.AiSectors.Count; i++)
                     {
-                        if (View.Track.AiSectors[i].GetResizeHandle(_drag.ObjectsList[_drag.ObjectNumber].Position) != ResizeHandle.None)
+                        if (View.Track.AiSectors[i].GetHover(_drag.ObjectsList[_drag.ObjectNumber].Position, 0) == HoverPart.Zone)
                         {
-                            _drag.ObjectsList[_drag.ObjectNumber].Zone = (byte)i;
+                            _drag.ObjectsList[_drag.ObjectNumber].Zone = (byte)(i+1);
                         }
                     }
 
@@ -175,29 +175,17 @@ public class ObjectEditor(TrackView trackView) : TrackEditor(trackView)
             var selection = _selection.Value;
             GameObject obj = selection.List[selection.Index];
             int id = obj.Id & 0b01111111;
-            ImGui.InputInt("ID: ", ref id);
+            ImGui.InputInt("Id", ref id);
             id &= 0b01111111;
             int global = obj.Id & 0x80;
             HelpMarker("Changes the id of the object. If you are using a object from a different track it is recommended to make this object global.");
-            ImGui.CheckboxFlags("Global Object: ", ref global, 0x80);
+            ImGui.CheckboxFlags("Global Object", ref global, 0x80);
             HelpMarker("Changes object to global table. Allows access to all objects from other tracks. For a full list of global objects check (TODO)");
             obj.Id = (byte)(id | global);
-            ImGui.SeparatorText("Object List");
-            if (ImGui.Button("Add Object")) {
-                selection.List.Add(new GameObject(2, new Point(64,64), 0));
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Duplicate Object") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D)){
-                var gameobj = (GameObject)obj.Clone();
-                gameobj.Position += new Point(2);
-                selection.List.Add(gameobj);
-                _selection = new ObjectAccess(selection.List, selection.List.Count-1);
-            }
-            ImGui.SameLine();
-            if (ImGui.Button("Delete Object") || ImGui.IsKeyPressed(ImGuiKey.Delete)){
-                selection.List.RemoveAt(selection.Index);
-                _selection = null;
-            }
+            int zone = obj.Zone;
+            ImGui.InputInt("Zone", ref zone);
+            obj.Zone = (byte)zone;
+            HelpMarker("Sets the zone of the object. Determines how items are loaded.");
         } 
         else 
         {
@@ -207,6 +195,58 @@ public class ObjectEditor(TrackView trackView) : TrackEditor(trackView)
             HelpMarker(" ");
             ImGui.CheckboxFlags("Global Object: ", ref i, 0x80);
             HelpMarker(" ");
+            ImGui.EndDisabled();
+        }
+
+        ImGui.SeparatorText("Object List");
+        if (ImGui.Button("Add Object"))
+        {
+            ImGui.OpenPopup("objtype");
+        }
+
+        if (ImGui.BeginPopup("objtype"))
+        {
+            if (ImGui.Button("Actor"))
+            {
+                trackView.Track.Actors.Add(new GameObject(2, new Point(64, 64), 0));
+                ImGui.CloseCurrentPopup();
+            }
+
+            if (ImGui.Button("Item Box"))
+            {
+                trackView.Track.ItemBoxes.Add(new GameObject(1, new Point(64, 64), 0));
+                ImGui.CloseCurrentPopup();
+            }
+
+            ImGui.EndPopup();
+        }
+
+        ImGui.SameLine();
+        if (_selection is not null)
+        {
+            var selection = _selection.Value;
+            GameObject obj = selection.List[selection.Index];
+            if (ImGui.Button("Duplicate Object") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D))
+            {
+                var gameobj = (GameObject)obj.Clone();
+                gameobj.Position += new Point(2);
+                selection.List.Add(gameobj);
+                _selection = selection with { Index = selection.List.Count - 1 };
+            }
+
+            ImGui.SameLine();
+            if (ImGui.Button("Delete Object") || ImGui.IsKeyPressed(ImGuiKey.Delete))
+            {
+                selection.List.RemoveAt(selection.Index);
+                _selection = null;
+            }
+        }
+        else
+        {
+            ImGui.BeginDisabled();
+            ImGui.Button("Duplicate Object");
+            ImGui.SameLine();
+            ImGui.Button("Delete Object");
             ImGui.EndDisabled();
         }
     }

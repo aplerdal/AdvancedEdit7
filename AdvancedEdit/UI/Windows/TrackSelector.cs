@@ -134,7 +134,7 @@ public class TrackSelector : UiWindow {
                                 var t = TrackManager.Tracks[
                                     TrackMapping[track+(cup+page*(CupsList.Length/PagesList.Length))*TracksList.Length/CupsList.Length]
                                 ];
-                                AdvancedEdit.Instance.UiManager.AddTrack(new TrackView(t));
+                                AdvancedEdit.Instance.UiManager.AddTrack(t);
                             }
                             ImGui.PopID();
                         }

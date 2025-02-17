@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using AdvancedEdit.Serialization;
 using AdvancedEdit.UI;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
@@ -25,11 +27,12 @@ public class UiManager
     {
         ImGui.DockSpaceOverViewport();
         MenuBar.Draw();
-
-        ImGui.Begin("Track Selector", ref _trackSelector.IsOpen, _trackSelector.Flags);
+        ImGui.SetNextWindowSize(new(256,256), ImGuiCond.FirstUseEver);
+        ImGui.Begin("Track Selector", _trackSelector.Flags);
         _trackSelector.Draw();
         ImGui.End();
-
+        
+        ImGui.SetNextWindowSize(new(256, 256), ImGuiCond.FirstUseEver);
         ImGui.Begin("Tracks", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse | ImGuiWindowFlags.MenuBar);
         if (ImGui.BeginTabBar("track_bar", ImGuiTabBarFlags.Reorderable))
         {
@@ -60,6 +63,7 @@ public class UiManager
         }
         ImGui.End();
 
+        ImGui.SetNextWindowSize(new(256, 256), ImGuiCond.FirstUseEver);
         ImGui.Begin("Inspector");
         if (_tracks.Count > 0 && _activeTrack >= 0)
             _tracks[_activeTrack].DrawInspector();
@@ -70,9 +74,10 @@ public class UiManager
     /// <summary>
     /// Add track to current context
     /// </summary>
-    /// <param name="track">Track to be added</param>
-    public void AddTrack(TrackView track)
+    /// <param name="t">Track to be added</param>
+    public void AddTrack(Track t)
     {
-        _tracks.Add(track);
+        if (!_tracks.Exists(x=>x.Track.Id == t.Id))
+            _tracks.Add(new TrackView(t));
     }
 }

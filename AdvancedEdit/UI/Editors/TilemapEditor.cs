@@ -65,6 +65,7 @@ public class TilemapEditor : TrackEditor
         ImGui.Separator();
         Vector2 mousePosition = ImGui.GetMousePos();
         Vector2 cursorPosition = ImGui.GetCursorScreenPos();
+        Debug.Assert(_palettePtr != IntPtr.Zero);
         ImGui.Image(_palettePtr, new(TileDisplaySize * 16));
         if (ImGui.IsItemHovered())
         {
@@ -94,6 +95,17 @@ public class TilemapEditor : TrackEditor
                 3.0f
             );
         }
+
+        ImGui.BeginDisabled(ActiveTile is null);
+        int buf = (ActiveTile is null) ? 0 : _track.Behaviors[ActiveTile.Value];
+        ImGui.InputInt("Behavior", ref buf);
+        if (ActiveTile is not null)
+        {
+            _track.Behaviors[ActiveTile.Value] = (byte)buf;
+        }
+        ImGui.EndDisabled();
+        HelpMarker("Changes the material you are driving on. For a full list visit TODO.");
+        
         ImGui.SeparatorText("Tileset Options");
         if (ImGui.Button("Load"))
         {
@@ -128,6 +140,7 @@ public class TilemapEditor : TrackEditor
 
     ~TilemapEditor()
     {
-        AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_palettePtr);
+        if (_palettePtr != IntPtr.Zero)
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_palettePtr);
     }
 }

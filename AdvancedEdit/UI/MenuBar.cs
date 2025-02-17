@@ -33,9 +33,12 @@ public static class MenuBar
                         AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file), path);
                         if (TrackManager.Tracks != null) {
                             AdvancedEdit.Instance.TrackManager.RomPath = path;
-                            AdvancedEdit.Instance.UiManager.AddTrack(new TrackView(TrackManager.Tracks[29]));
+                            AdvancedEdit.Instance.UiManager.AddTrack(TrackManager.Tracks[29]);
                         }
-                        // TODO: Show user error.
+                        else
+                        {
+                            // TODO: Show user error.
+                        }
                         file.Close();
                     }
                 }
@@ -46,11 +49,17 @@ public static class MenuBar
                     var status = Nfd.SaveDialog(out path, RomFilter, "mksc_modified.gba");
                     if (status == NfdStatus.Ok && path is not null)
                     {
-                        File.Copy(AdvancedEdit.Instance.TrackManager!.RomPath, path, true);
-                        var file = File.OpenWrite(path);
-                        AdvancedEdit.Instance.TrackManager.Save(new BinaryWriter(file));
-                        file.Close();
-                        ImGui.OpenPopup("saved");
+                        try
+                        {
+                            File.Copy(AdvancedEdit.Instance.TrackManager!.RomPath, path, true);
+                            var file = File.OpenWrite(path);
+                            AdvancedEdit.Instance.TrackManager.Save(new BinaryWriter(file));
+                            file.Close();
+                        }
+                        catch
+                        {
+                            // I hate errors, lets get rid of them!
+                        }
                     }
                 }
                 
@@ -74,13 +83,6 @@ public static class MenuBar
             }
 
             ImGui.EndMainMenuBar();
-
-            if (ImGui.BeginPopupModal("saved")) {
-                ImGui.Text("Sucessfully saved file.");
-                if (ImGui.Button("Close"))
-                    ImGui.CloseCurrentPopup();
-                ImGui.EndPopup();
-            }
         }
     }
 }
