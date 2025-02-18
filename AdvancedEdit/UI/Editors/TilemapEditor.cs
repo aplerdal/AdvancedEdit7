@@ -133,7 +133,7 @@ public class TilemapEditor : TrackEditor
             {
                 try
                 {
-                    _track.Tileset.ToPng(path);
+                    _track.Tileset.ExportPng(path);
                 }
                 catch (ArgumentException e)
                 {

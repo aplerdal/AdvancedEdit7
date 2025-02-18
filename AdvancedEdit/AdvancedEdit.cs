@@ -20,7 +20,7 @@ public class AdvancedEdit : Game
     /// <summary>
     /// Program Version
     /// </summary>
-    public const string Version = "0.1.0"; 
+    public const string Version = "1.0.0"; 
     
     public GraphicsDeviceManager Graphics;
     public SpriteBatch SpriteBatch;

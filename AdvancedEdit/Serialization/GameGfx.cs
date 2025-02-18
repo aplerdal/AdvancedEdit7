@@ -138,7 +138,7 @@ public class GameGfx
     /// Exports an square, indexed PNG image from gamegfx
     /// </summary>
     /// <param name="path">Path to the save location</param>
-    public void ToPng(string path)
+    public void ExportPng(string path)
     {
         // Should fix this
         int width = 128;
