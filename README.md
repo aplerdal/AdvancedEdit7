@@ -9,7 +9,7 @@ Advanced Edit can:
 - Move starting positions
 - Modify track props
 - Change Tile behaviors
-- Import custom tilesets
+- Import and export custom tilesets
 - Import SMK tracks
 
 And hopefully it will be able to do even more in the future. 
