@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using Hjg.Pngcs;
+using Hjg.Pngcs.Chunks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
@@ -24,6 +25,7 @@ public class GameGfx
     public Color[] Palette { get; set; }
 
     public byte[] Indices { get; set; }
+
     public IntPtr TexturePtr
     {
         get
@@ -33,9 +35,10 @@ public class GameGfx
             return _texturePtrCache;
         }
     }
-    
+
     private Texture2D? _cache;
     private IntPtr _texturePtrCache = IntPtr.Zero;
+
     public GameGfx(byte[] indices, Color[] palette)
     {
         Indices = indices;
@@ -51,15 +54,17 @@ public class GameGfx
     private void RegenCache()
     {
         var tileCount = Indices.Length / 64;
-        var tempTexture = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, tileCount*8, 8, false, SurfaceFormat.Color);
+        var tempTexture = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, tileCount * 8, 8, false,
+            SurfaceFormat.Color);
         Color[] colors = new Color[tileCount * 64];
         for (int tile = 0; tile < tileCount; tile++)
-            for (int y = 0; y < 8; y++)
-                for (int x = 0; x < 8; x++)
-                    colors[x + y * tileCount*8 + tile * 8] = Palette[Indices[x + y * 8 + tile * 64]% Palette.Length];
+        for (int y = 0; y < 8; y++)
+        for (int x = 0; x < 8; x++)
+            colors[x + y * tileCount * 8 + tile * 8] = Palette[Indices[x + y * 8 + tile * 64] % Palette.Length];
         tempTexture.SetData(colors);
         _cache = tempTexture;
     }
+
     /// <summary>
     /// Loads game gfx from a png image. Supports indexed images
     /// </summary>
@@ -80,11 +85,11 @@ public class GameGfx
             if (height % 8 != 0 || width % 8 != 0) throw new ArgumentException("Image size was not a multiple of 8");
             int tileWidth = width / 8;
             int tileHeight = height / 8;
-            
+
             // Load Image palette
             var chunk = pngr.GetMetadata().GetPLTE();
             if (chunk == null) throw new ArgumentException("Error reading image palette");
-            
+
             palette = new Color[chunk.GetNentries()];
             for (int i = 0; i < chunk.GetNentries(); i++)
             {
@@ -92,6 +97,7 @@ public class GameGfx
                 chunk.GetEntryRgb(i, rgb);
                 palette[i] = new Color(rgb[0], rgb[1], rgb[2]);
             }
+
             // Load image indicies
             if (pngr.ImgInfo.BitspPixel == 8)
             {
@@ -100,7 +106,7 @@ public class GameGfx
                 {
                     for (int y = 0; y < 8; y++)
                     {
-                        var line = pngr.ReadRowByte(tileY*8+y);
+                        var line = pngr.ReadRowByte(tileY * 8 + y);
                         byte[] scanline = line.GetScanlineByte();
                         Debug.Assert(width == scanline.Length);
                         for (int tileX = 0; tileX < tileWidth; tileX++)
@@ -117,7 +123,8 @@ public class GameGfx
             }
             else
             {
-                throw new ArgumentException("Image is not 8bpp. If you see this, please send the image to me so I can add the format.");
+                throw new ArgumentException(
+                    "Image is not 8bpp. If you see this, please send the image to me so I can add the format.");
             }
         }
         else
@@ -125,6 +132,40 @@ public class GameGfx
             // Not indexed image loading (hard)
             throw new ArgumentException("Only paletted images are supported currently.");
         }
+    }
+
+    /// <summary>
+    /// Exports an square, indexed PNG image from gamegfx
+    /// </summary>
+    /// <param name="path">Path to the save location</param>
+    public void ToPng(string path)
+    {
+        // Should fix this
+        int width = 128;
+        int height = 128;
+        var imageInfo = new ImageInfo(width, height, 8, false, false, true);
+        var stream = File.OpenWrite(path);
+        PngWriter pngw = new PngWriter(stream, imageInfo);
+        pngw.CompLevel = 9;
+        PngChunkPLTE palette = new PngChunkPLTE(imageInfo);
+        palette.SetNentries(64);
+        for (int i = 0; i < Palette.Length; i++)
+        {
+            var col = Palette[i];
+            palette.SetEntry(i, col.R, col.G, col.B);
+        }
+        pngw.GetMetadata().QueueChunk(palette);
+        // indices[64 * (tileY * tileWidth + tileX) + y * 8 + x] = scanline[tileX * 8 + x];
+        for (int tileY = 0; tileY < height / 8; tileY++)
+        for (int y = 0; y < 8; y++)
+        {
+            ImageLine line = new ImageLine(imageInfo);
+            for (int tileX = 0; tileX < width / 8; tileX++)
+            for (int x = 0; x < 8; x++)
+                line.Scanline[tileX * 8 + x] = Indices[64 * (tileY * (width / 8) + tileX) + y * 8 + x];
+            pngw.WriteRow(line, tileY*8+y);
+        }
+        pngw.End();
     }
 
     public static byte[] IndicesFrom4Bpp(byte[] data)

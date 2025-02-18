@@ -109,8 +109,7 @@ public class TilemapEditor : TrackEditor
         ImGui.SeparatorText("Tileset Options");
         if (ImGui.Button("Load"))
         {
-            string? path;
-            var status = Nfd.OpenDialog(out path);
+            var status = Nfd.OpenDialog(out var path);
             if (status == NfdStatus.Ok && path is not null)
             {
                 try
@@ -124,6 +123,22 @@ public class TilemapEditor : TrackEditor
                 RegenAtlas();
                 _track.Tilemap.Tileset = _track.Tileset.Texture;
                 _track.Tilemap.RegenMap();
+            }
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Save"))
+        {
+            var status = Nfd.SaveDialog(out var path);
+            if (status == NfdStatus.Ok && path is not null)
+            {
+                try
+                {
+                    _track.Tileset.ToPng(path);
+                }
+                catch (ArgumentException e)
+                {
+                    ErrorManager.ShowError("Error saving image:", e);
+                }
             }
         }
         
