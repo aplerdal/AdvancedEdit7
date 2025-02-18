@@ -21,7 +21,7 @@ public class UiManager
 
 
     /// <summary>
-    /// Render and handle input for all windows from the current window list;
+    /// Render and handle input for all windows
     /// </summary>
     public void DrawWindows()
     {
@@ -68,7 +68,10 @@ public class UiManager
         if (_tracks.Count > 0 && _activeTrack >= 0)
             _tracks[_activeTrack].DrawInspector();
         ImGui.End();
-        // if window is focused draw inspector and call update
+
+
+        // Show any errors
+        ErrorManager.Update();
     }
 
     /// <summary>

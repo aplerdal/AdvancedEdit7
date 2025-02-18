@@ -119,7 +119,7 @@ public class TilemapEditor : TrackEditor
                 }
                 catch (ArgumentException e)
                 {
-                    // TODO: Error messages
+                    ErrorManager.ShowError("Error reading image:", e);
                 }
                 RegenAtlas();
                 _track.Tilemap.Tileset = _track.Tileset.Texture;

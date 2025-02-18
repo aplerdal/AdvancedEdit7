@@ -17,14 +17,7 @@ public class TrackManager
             uint definitionAddress = (uint)(DefintionTable + 4 * i);
             reader.BaseStream.Seek(TrackTable + 4*i, SeekOrigin.Begin);
             var trackAddress = reader.ReadUInt32() + TrackTable;
-            try {
-                Tracks![i] = new Track(reader, i, definitionAddress, trackAddress);
-            } catch {
-                // TODO: Show user errors
-                Console.WriteLine($"Error loading track \"{TrackSelector.GetTrackName(i)}\"");
-                Tracks = null;
-                return;
-            }
+            Tracks![i] = new Track(reader, i, definitionAddress, trackAddress);
         }
     }
 

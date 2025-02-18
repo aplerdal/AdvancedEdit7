@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using AdvancedEdit.Serialization;
@@ -29,17 +30,18 @@ public static class MenuBar
                     var status = Nfd.OpenDialog(out path, RomFilter, null);
                     if (status == NfdStatus.Ok && path is not null)
                     {
-                        var file = File.OpenRead(path);
-                        AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file), path);
-                        if (TrackManager.Tracks != null) {
-                            AdvancedEdit.Instance.TrackManager.RomPath = path;
-                            AdvancedEdit.Instance.UiManager.AddTrack(TrackManager.Tracks[29]);
-                        }
-                        else
+                        try
                         {
-                            // TODO: Show user error.
+                            var file = File.OpenRead(path);
+                            AdvancedEdit.Instance.TrackManager = new TrackManager(new BinaryReader(file), path);
+                            AdvancedEdit.Instance.TrackManager.RomPath = path;
+                            //AdvancedEdit.Instance.UiManager.AddTrack(TrackManager.Tracks[29]);
+                            file.Close();
+                        } 
+                        catch (Exception e)
+                        {
+                            ErrorManager.ShowError("Error reading file:", e);
                         }
-                        file.Close();
                     }
                 }
 
@@ -56,9 +58,9 @@ public static class MenuBar
                             AdvancedEdit.Instance.TrackManager.Save(new BinaryWriter(file));
                             file.Close();
                         }
-                        catch
+                        catch (Exception e)
                         {
-                            // I hate errors, lets get rid of them!
+                            ErrorManager.ShowError("Error saving file:", e);
                         }
                     }
                 }
