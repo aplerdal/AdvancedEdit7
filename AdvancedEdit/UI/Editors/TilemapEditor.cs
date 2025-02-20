@@ -114,7 +114,7 @@ public class TilemapEditor : TrackEditor
             {
                 try
                 {
-                    _track.Tileset = GameGfx.FromPng(path);
+                    _track.Tileset = Gfx8.FromPng(path);
                 }
                 catch (ArgumentException e)
                 {

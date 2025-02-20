@@ -24,14 +24,14 @@ public class Track
     public Tilemap Tilemap;
     private byte[] _minimap;
     
-    private GameGfx? _tileset;
-    public GameGfx Tileset
+    private Gfx8? _tileset;
+    public Gfx8 Tileset
     {
         get
         {
             if (_tileset is not null) return _tileset;
             if (ReusedTileset == 0) throw new Exception("Tileset null, not reused.");
-            // Should be read from defintion index iirc
+            // TODO: Should be read from track defintion index iirc
             return TrackManager.Tracks![Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
         }
         set {
@@ -39,10 +39,10 @@ public class Track
             ReusedTileset = 0;
         }
     }
-    public List<AiSector> AiSectors = new List<AiSector>(); // Linked list so rearranging and removing is faster
+    public List<AiSector> AiSectors = new List<AiSector>();
 
-    // private GameGfx[]? _actorGfx;
-    // public GameGfx[]? ActorGfx
+    // private Gfx4 _actorGfx;
+    // public Gfx4 ActorGfx
     // {
     //     get
     //     {
@@ -71,8 +71,8 @@ public class Track
     public List<Point> Overlay = new List<Point>();
 
     // From track definition
-    // public GameGfx Name;
-    // public GameGfx Cover;
+    // public Gfx4 Name;
+    // public Gfx4 Cover;
     
     public uint Laps; // Artificially clamp from 1-5 (beyond that it likely breaks). Auto apply patch to all ROMs.
 
@@ -182,13 +182,13 @@ public class Track
                     Array.Copy(data, 0, indices, i*4096, 4096);
                 }
             }
-            Tileset = new GameGfx(indices, tilePalette);
+            Tileset = new Gfx8(indices, tilePalette);
         }
         else
         {
             reader.BaseStream.Seek(tilesetAddress, SeekOrigin.Begin);
             byte[] data = Lz10.Decompress(reader).ToArray();
-            Tileset = new GameGfx(data, tilePalette);
+            Tileset = new Gfx8(data, tilePalette);
         }
         #endregion
         

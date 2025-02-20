@@ -1,58 +1,66 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Hjg.Pngcs;
 using Hjg.Pngcs.Chunks;
-using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Color = Microsoft.Xna.Framework.Color;
 
 namespace AdvancedEdit.Serialization;
 
-public class GameGfx
-{
-    public Texture2D Texture
-    {
-        get
-        {
-            if (_cache is null) RegenCache();
-            Debug.Assert(_cache is not null);
+// TODO: Make gfx types inherit base class.
+
+/// <summary>
+/// A class representing 4bpp game graphics
+/// </summary>
+public class Gfx4{
+    public byte[] Indices {get; set;}
+    public Color[,] Palettes {get; set;}
+    
+    private int _activePalette;
+    public int ActivePalette {
+        get => _activePalette;
+        set{
+            _activePalette = value;
+            _cache = GenerateTexture();
+            if (_texturePtrCache is not null)
+                AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_texturePtrCache.Value, Texture);
+        }
+    }
+    public Texture2D Texture {
+        get {
+            if (_cache is null) _cache = GenerateTexture();
             return _cache;
         }
     }
-
-    public Color[] Palette { get; set; }
-
-    public byte[] Indices { get; set; }
-
+    protected Texture2D? _cache;
     public IntPtr TexturePtr
     {
         get
         {
-            if (_texturePtrCache == IntPtr.Zero)
+            if (_texturePtrCache is null)
                 _texturePtrCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Texture);
-            return _texturePtrCache;
+            return _texturePtrCache.Value;
         }
     }
+    protected IntPtr? _texturePtrCache;
 
-    private Texture2D? _cache;
-    private IntPtr _texturePtrCache = IntPtr.Zero;
-
-    public GameGfx(byte[] indices, Color[] palette)
-    {
-        Indices = indices;
-        Palette = palette;
+    public Gfx4(byte[] data, Color[,] palettes){
+        Palettes = palettes;
+        Indices = new byte[data.Length*2];
+        for (int i = 0; i < data.Length; i++) {
+            Indices[i*2] = (byte)(data[i]&0xf);
+            Indices[i*2+1]=(byte)(data[i]>>4);
+        }
     }
-
-    public GameGfx()
-    {
-        Indices = [];
-        Palette = [];
+    public byte[] GetBytes(){
+        byte[] bytes = new byte[Indices.Length/2];
+        for (int i = 0; i < bytes.Length; i++) {
+            bytes[i] = (byte)((Indices[i*2]&0xf) | (Indices[i*2+1]<<4));
+        }
+        return bytes;
     }
-
-    private void RegenCache()
-    {
+    public Texture2D GenerateTexture(){
         var tileCount = Indices.Length / 64;
         var tempTexture = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, tileCount * 8, 8, false,
             SurfaceFormat.Color);
@@ -60,21 +68,21 @@ public class GameGfx
         for (int tile = 0; tile < tileCount; tile++)
         for (int y = 0; y < 8; y++)
         for (int x = 0; x < 8; x++)
-            colors[x + y * tileCount * 8 + tile * 8] = Palette[Indices[x + y * 8 + tile * 64] % Palette.Length];
+            colors[x + y * tileCount * 8 + tile * 8] = Palettes[Indices[x + y * 8 + tile * 64] % 16, ActivePalette];
         tempTexture.SetData(colors);
-        _cache = tempTexture;
+        return tempTexture;
     }
 
     /// <summary>
     /// Loads game gfx from a png image. Supports indexed images
     /// </summary>
     /// <param name="path">Path to the png image</param>
-    /// <returns>A new gamegfx instance with the image data</returns>
+    /// <returns>A new instance with the image data</returns>
     /// <exception cref="ArgumentException">Error reading png</exception>
-    public static GameGfx FromPng(string path)
+    public static Gfx4 FromPng(string path)
     {
-        Color[] palette;
         byte[] indices;
+        Color[,] palettes;
         if (Path.GetExtension(path) != ".png") throw new ArgumentException("Provided path is not a png image.");
         Stream fileStream = File.OpenRead(path);
         PngReader pngr = new PngReader(fileStream);
@@ -90,14 +98,19 @@ public class GameGfx
             var chunk = pngr.GetMetadata().GetPLTE();
             if (chunk == null) throw new ArgumentException("Error reading image palette");
 
-            palette = new Color[chunk.GetNentries()];
-            for (int i = 0; i < chunk.GetNentries(); i++)
+            var palLen = chunk.GetNentries();
+            var palette = new Color[palLen];
+            for (int i = 0; i < palLen; i++)
             {
                 int[] rgb = new int[3];
                 chunk.GetEntryRgb(i, rgb);
                 palette[i] = new Color(rgb[0], rgb[1], rgb[2]);
             }
-
+            palettes = new Color[16,(int)Math.Ceiling(palLen/16f)];
+            for (int subPalette = 0; subPalette < Math.Ceiling(palLen/16f); subPalette++)
+            for (int i = 0; i < 16; i++)
+                palettes[i, subPalette] = (subPalette*16+i < palLen)?palette[subPalette*16+i] : Color.Black;
+            
             // Load image indicies
             if (pngr.ImgInfo.BitspPixel == 8)
             {
@@ -119,7 +132,12 @@ public class GameGfx
                     }
                 }
 
-                return new GameGfx(indices, palette);
+                byte[] data = new byte[indices.Length/2];
+                for (int i = 0; i < data.Length; i++){
+                    data[i] = (byte)((indices[i*2]&0xf) | (indices[i*2+1]<<4));
+                }
+
+                return new Gfx4(data, palettes);
             }
             else
             {
@@ -135,27 +153,35 @@ public class GameGfx
     }
 
     /// <summary>
-    /// Exports an square, indexed PNG image from gamegfx
+    /// Exports an square, indexed PNG image from the gfx4 instance
     /// </summary>
     /// <param name="path">Path to the save location</param>
     public void ExportPng(string path)
     {
-        // Should fix this
-        int width = 128;
-        int height = 128;
+        // Exports in a square for now
+        int width, height;
+        var sqrt = Math.Sqrt(Indices.Length);
+        if (sqrt%1f == 0f){
+            width = (int)sqrt;
+            height = (int)sqrt;
+        } else {
+            width = Indices.Length/8;
+            height = 8;
+        }
         var imageInfo = new ImageInfo(width, height, 8, false, false, true);
         var stream = File.OpenWrite(path);
         PngWriter pngw = new PngWriter(stream, imageInfo);
         pngw.CompLevel = 9;
         PngChunkPLTE palette = new PngChunkPLTE(imageInfo);
-        palette.SetNentries(64);
-        for (int i = 0; i < Palette.Length; i++)
+        palette.SetNentries(Palettes.Length);
+        for (int i = 0; i < Palettes.Length/16; i++)
         {
-            var col = Palette[i];
-            palette.SetEntry(i, col.R, col.G, col.B);
+            for (int j = 0; j < 16; j++) {
+                var col = Palettes[j,i];
+                palette.SetEntry(i, col.R, col.G, col.B);
+            }
         }
         pngw.GetMetadata().QueueChunk(palette);
-        // indices[64 * (tileY * tileWidth + tileX) + y * 8 + x] = scanline[tileX * 8 + x];
         for (int tileY = 0; tileY < height / 8; tileY++)
         for (int y = 0; y < 8; y++)
         {
@@ -167,38 +193,8 @@ public class GameGfx
         }
         pngw.End();
     }
-
-    public static byte[] IndicesFrom4Bpp(byte[] data)
-    {
-        byte[] indices = new byte[data.Length * 2];
-        for (int i = 0; i < data.Length; i++)
-        {
-            indices[i * 2] = (byte)(data[i] & 0xF); // Lower 4 bits
-            indices[i * 2 + 1] = (byte)((data[i] >> 4) & 0xF); // Upper 4 bits
-        }
-
-        return indices;
-    }
-
-    public static byte[] IndicesTo4Bpp(byte[] indices)
-    {
-        if (indices.Length % 2 != 0)
-        {
-            throw new ArgumentException("Index array must contain an even number of entries.");
-        }
-
-        byte[] data = new byte[indices.Length / 2];
-        for (int i = 0; i < data.Length; i++)
-        {
-            data[i] = (byte)(indices[i * 2] | (indices[i * 2 + 1] << 4));
-        }
-
-        return data;
-    }
-
-    ~GameGfx()
-    {
-        if (_texturePtrCache != IntPtr.Zero)
-            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache);
+    ~Gfx4() {
+        if (_texturePtrCache is not null)
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache.Value);
     }
 }
