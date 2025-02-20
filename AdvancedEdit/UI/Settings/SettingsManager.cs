@@ -14,7 +14,7 @@ public class SettingsManager{
         try {
             XElement document = XElement.Load(path);
             var settings = document.Descendants("Settings");
-            Settings = settings.Elements("Setting").ToDictionary(x=>x.Attribute("id").Value, x=>new Setting(x));
+            Settings = settings.Elements("Setting").ToDictionary(x=>x.Attribute("id")!.Value, x=>new Setting(x));
             return true;
         } catch {
             return false;

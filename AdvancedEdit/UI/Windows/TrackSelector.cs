@@ -116,9 +116,13 @@ public class TrackSelector : UiWindow {
     }
     public override void Draw()
     {
-        if (AdvancedEdit.Instance.TrackManager == null)
+        if (AdvancedEdit.Instance.TrackManager is null)
         {
             ImGui.Text("No ROM Loaded");
+            return;
+        }
+        if (TrackManager.Tracks is null) {
+            ImGui.Text("Failed to load ROM");
             return;
         }
         for (int page = 0; page < PagesList.Length; page++){

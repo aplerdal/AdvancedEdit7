@@ -178,6 +178,7 @@ public class AiSector : IEquatable<AiSector>
         var pos = new Point(x, y);
         Targets = [pos,pos,pos];
         Speeds = [0,0,0];
+        Intersections = [false, false, false];
     }
 
     public AiSector(AiSector oldSector)

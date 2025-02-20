@@ -45,7 +45,7 @@ namespace AdvancedEdit.Serialization
             {
                 if (!_fields.ContainsKey(name))
                 {
-                    _fields.Add(name, null);
+                    _fields.Add(name, value);
                 }
 
                 _fields[name] = value;
