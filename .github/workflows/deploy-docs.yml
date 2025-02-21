@@ -3,7 +3,7 @@ name: Deploy docs to pages
 on:
     push:
         branches:
-            - main
+            - master
 
 jobs:
     build-and-deploy:
