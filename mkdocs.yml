@@ -1,0 +1,5 @@
+site_name: Super Circuit Docs
+nav:
+  - Home: index.md
+docs_dir: docs
+site_dir: site
