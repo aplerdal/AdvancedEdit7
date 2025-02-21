@@ -31,7 +31,6 @@ public class Track
         {
             if (_tileset is not null) return _tileset;
             if (ReusedTileset == 0) throw new Exception("Tileset null, not reused.");
-            // TODO: Should be read from track defintion index iirc
             return TrackManager.Tracks![Math.Clamp(Id - (256 - ReusedTileset), 0, Id-1)].Tileset; //TODO: Proper reused tilset offsets
         }
         set {
@@ -41,19 +40,17 @@ public class Track
     }
     public List<AiSector> AiSectors = new List<AiSector>();
 
-    // private Gfx4 _actorGfx;
-    // public Gfx4 ActorGfx
-    // {
-    //     get
-    //     {
-    //         if (_actorGfx is not null) return _actorGfx;
-    //         if (ReusedActorGfx == 0) return null; // No actor gfx in scene
-    //         return TrackManager.Tracks[Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ActorGfx;
-    //     }
-    //     set => _actorGfx = value;
-    // }
-    public byte[]? ActorGfxData;
-    public Color[][]? ActorGfxPalettes;
+    private Gfx4? _actorGfx;
+    public Gfx4? ActorGfx
+    {
+        get
+        {
+            if (_actorGfx is not null) return _actorGfx;
+            if (ReusedActorGfx == 0) return null; // No actor gfx in scene
+            return TrackManager.Tracks![Math.Clamp(Id - (256 - ReusedTileset), 0, Id - 1)].ActorGfx;
+        }
+        set => _actorGfx = value;
+    }
     
     /// <summary>
     /// Track size in tiles
@@ -74,7 +71,7 @@ public class Track
     // public Gfx4 Name;
     // public Gfx4 Cover;
     
-    public uint Laps; // Artificially clamp from 1-5 (beyond that it likely breaks). Auto apply patch to all ROMs.
+    public uint Laps; // Artificially clamp from 1-5 (beyond that it likely breaks). Need to Auto apply patch to all ROMs.
 
     // Store data we do not keep track of that cannot be determined.
     private byte _magic; // Might be okay to change to const?
@@ -254,42 +251,31 @@ public class Track
 
         #region Load Actor GFX
         
-        if (paletteAddress != headerAddress)
-        {
-            Color[][] actorPalettes = new Color[4][];
-            reader.BaseStream.Seek(actorPaletteAddress, SeekOrigin.Begin);
-            for (int pal = 0; pal < 4; pal++)
-            {
-                actorPalettes[pal] = new Color[16];
-                for (int i = 0; i < 16; i++)
-                    actorPalettes[pal][i] = new BgrColor(reader.ReadUInt16()).ToColor();
-            }
-
-            ActorGfxPalettes = actorPalettes;
-        }
-        else
-        {
-            ActorGfxPalettes = null;
-        }
-        
         if (ReusedActorGfx != 0)
         {
-            ActorGfxData = null;
+            ActorGfx = null;
         }
         else
         {
             if (actorGfxAddress != headerAddress)
             {
+                Color[,] actorPalettes = new Color[16, 4];
+
+                reader.BaseStream.Seek(actorPaletteAddress, SeekOrigin.Begin);
+                for (int pal = 0; pal < 4; pal++)
+                for (int i = 0; i < 16; i++)
+                    actorPalettes[i, pal] = new BgrColor(reader.ReadUInt16()).ToColor();
+                
                 if (!Flags.HasFlag(TrackFlags.SplitActorGfx))
                 {
                     reader.BaseStream.Seek(actorGfxAddress, SeekOrigin.Begin);
                     var data = Lz10.Decompress(reader).ToArray();
-                    ActorGfxData = data;
+                    ActorGfx = new Gfx4(data, actorPalettes);
                 }
                 else
                 {
                     long pos = actorGfxAddress;
-                    byte[] indices = new byte[4096 * 2];
+                    byte[] data = new byte[4096 * 2];
                     for (int i = 0; i < 2; i++)
                     {
                         reader.BaseStream.Seek(pos, SeekOrigin.Begin);
@@ -299,12 +285,12 @@ public class Track
                         {
                             var partAddress = actorGfxAddress + offset;
                             reader.BaseStream.Seek(partAddress, SeekOrigin.Begin);
-                            var data = Lz10.Decompress(reader).ToArray();
-                            Array.Copy(data, 0, indices, 4096*i, data.Length);
+                            var temp = Lz10.Decompress(reader).ToArray();
+                            Array.Copy(temp, 0, data, 4096*i, temp.Length);
                         }
                     }
 
-                    ActorGfxData = indices;
+                    ActorGfx = new Gfx4(data, actorPalettes);
                 }
             }
         }
@@ -575,25 +561,25 @@ public class Track
 
         uint actorGfxOffset = 0;
         uint actorPalOffset = 0;
-        if (ReusedActorGfx == 0 && ActorGfxData != null)
+        if (ReusedActorGfx == 0 && ActorGfx != null)
         {
             actorGfxOffset = pos;
             Debug.Assert(writer.BaseStream.Position == header + actorGfxOffset);
-            byte[] tmp = ActorGfxData!;
-            if (tmp.Length <= 4096)
+            byte[] bytes = ActorGfx.GetBytes();
+            if (bytes.Length <= 4096)
             {
                 Flags &= ~TrackFlags.SplitActorGfx;
-                byte[] compressed = Lz10.Compress(tmp);
+                byte[] compressed = Lz10.Compress(bytes);
                 writer.Write(compressed);
                 pos += (uint)compressed.Length;
             }
             else
             {
                 Flags |= TrackFlags.SplitActorGfx;
-                byte[][] parts = new byte[tmp.Length / 4096][];
+                byte[][] parts = new byte[bytes.Length / 4096][];
                 for (int i = 0; i < parts.Length; i++)
                 {
-                    parts[i] = Lz10.Compress(tmp[(i * 4096)..((i + 1) * 4096)]);
+                    parts[i] = Lz10.Compress(bytes[(i * 4096)..((i + 1) * 4096)]);
                 }
 
                 ushort localPos = 0x20;
@@ -618,20 +604,12 @@ public class Track
             actorPalOffset = pos;
             Debug.Assert(writer.BaseStream.Position == header + actorPalOffset);
             {
-                var palettes = ActorGfxPalettes!;
+                var palettes = ActorGfx.Palettes;
                 for (int i = 0; i < 4; i++)
+                for (int j = 0; j < 16; j++)
                 {
-                    var palette = palettes[i];
-                    byte[] data = new byte[palette.Length * 2];
-                    for (int j = 0; j < palette.Length * 2; j += 2)
-                    {
-                        var col = BitConverter.GetBytes(new BgrColor(palette[j / 2]).Raw);
-                        data[j] = col[0];
-                        data[j + 1] = col[1];
-                    }
-
-                    writer.Write(data);
-                    pos += (uint)data.Length;
+                    writer.Write(new BgrColor(palettes[j, i]).Raw);
+                    pos += 2;
                 }
             }
         }

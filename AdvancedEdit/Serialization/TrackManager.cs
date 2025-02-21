@@ -25,7 +25,7 @@ public class TrackManager
     {
         if (Tracks is null) return;
         
-        uint pos = 4*TrackCount + 0x10;
+        uint pos = 0x400000 - TrackTable;
         for (int i = 0; i < TrackCount; i++)
         {
             uint definitionAddress = (uint)(DefintionTable + 4 * i);
