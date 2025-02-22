@@ -67,12 +67,11 @@
                     <div class="col-md-9" role="main">
 
 <h1 id="super-circuit-docs">Super Circuit docs</h1>
-<p>Mario Kart: Super Circuit Technical documentation. All information is regarding the US version, but may be aplicable to other versions as well. Parts of this document assume you have a basic understanding of c structs and coding.</p>
+<p>Mario Kart: Super Circuit Technical documentation. All information is regarding the US version, but may be aplicable to other versions as well. This document assume you have a decent understanding of C and hex editing.</p>
 <h2 id="basics">Basics</h2>
 <p>Most numbers in this document will be in <a href="https://en.wikipedia.org/wiki/Hexadecimal">hexadecimal</a>, or base 16. Keep this in mind while reading.</p>
 <p>All values are stored little endian. In practice, this means that when reading a value you read the bytes from right to left. For example, the address for the track table <code>0x08258000</code> would be stored in the rom as <code>00 80 25 08</code> This applies to all values.</p>
-<p>All compressed data will use LZ77 compression unless explicitly stated otherwise.</p>
-<p>Offsets are commonly used, to find the address of an offset, take the stated base pointer and add the value of the offset to it.</p></div>
+<p>All compressed data will use LZ77 compression unless explicitly stated otherwise.</p></div>
             </div>
         </div>
 
@@ -154,5 +153,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-02-21 20:55:03.756196+00:00
+Build Date UTC : 2025-02-22 01:12:20.821134+00:00
 -->

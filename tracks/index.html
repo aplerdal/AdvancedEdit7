@@ -55,7 +55,11 @@
             
             <li class="nav-item" data-bs-level="1"><a href="#tracks" class="nav-link">Tracks</a>
               <ul class="nav flex-column">
-            <li class="nav-item" data-bs-level="2"><a href="#definition" class="nav-link">Definition</a>
+            <li class="nav-item" data-bs-level="2"><a href="#header" class="nav-link">Header</a>
+              <ul class="nav flex-column">
+              </ul>
+            </li>
+            <li class="nav-item" data-bs-level="2"><a href="#track-definition" class="nav-link">Track Definition</a>
               <ul class="nav flex-column">
               </ul>
             </li>
@@ -68,14 +72,18 @@
 
 <h1 id="tracks">Tracks</h1>
 <p>Different track data is stored in several different places throughout the game. The main two are the track definition and the track header.</p>
-<h2 id="definition">Definition</h2>
+<h2 id="header">Header</h2>
+<p>Stores a list of the tracks.</p>
+<p>Located at <code>0x258000</code>, it is a list of 49 track offsets relative to <code>0x258000</code>. It is followed by a 16 character cstring.</p>
+<h3 id="struct">Struct</h3>
+<pre><code class="language-c">struct track_header {
+    uint[49] offsets;
+    char[16] date;
+};
+</code></pre>
+<h2 id="track-definition">Track Definition</h2>
 <p>Stores menu data and functions involved with the track.</p>
-<h3 id="layout">Layout</h3>
-<pre><code class="language-c">// TODO
-struct {
-
-}
-</code></pre></div>
+<h3 id="layout">Layout</h3></div>
             </div>
         </div>
 
