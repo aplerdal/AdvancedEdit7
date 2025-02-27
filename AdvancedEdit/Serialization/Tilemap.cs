@@ -88,6 +88,55 @@ public class Tilemap
         AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(null);
     }
 
+    public void SetTiles(HashSet<Point> positions, byte tile)
+    {
+        AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);
+        AdvancedEdit.Instance.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque,
+            samplerState: SamplerState.PointClamp);
+        foreach (var pos in positions)
+        {
+            Layout[pos.X, pos.Y] = tile;
+            AdvancedEdit.Instance.SpriteBatch.Draw(Tileset, new Vector2(pos.X * 8, pos.Y * 8),
+                new Rectangle(tile * 8, 0, 8, 8), Color.White);
+        }
+
+        AdvancedEdit.Instance.SpriteBatch.End();
+        AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(null);
+    }
+
+    public void SetTiles(Rectangle area, byte tile)
+    {
+        AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);
+        AdvancedEdit.Instance.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque,
+            samplerState: SamplerState.PointClamp);
+        for (int y = area.Top; y < area.Bottom; y++)
+        for (int x = area.Left; x < area.Right; x++)
+        {
+            Layout[x, y] = tile;
+            AdvancedEdit.Instance.SpriteBatch.Draw(Tileset, new Vector2(x * 8, y * 8),
+                new Rectangle(tile * 8, 0, 8, 8), Color.White);
+        }
+        AdvancedEdit.Instance.SpriteBatch.End();
+        AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(null);
+    }
+
+    public void SetTiles(byte[,] data, Point position)
+    {
+        AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);
+        AdvancedEdit.Instance.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Opaque,
+            samplerState: SamplerState.PointClamp);
+        for (int y = position.Y; y < position.Y + data.GetLength(1); y++)
+        for (int x = position.X; x < position.X + data.GetLength(0); x++)
+        {
+            Layout[x, y] = data[x - position.X,y - position.Y];
+            AdvancedEdit.Instance.SpriteBatch.Draw(Tileset, new Vector2(x * 8, y * 8),
+                new Rectangle(data[x - position.X, y - position.Y] * 8, 0, 8, 8), Color.White);
+        }
+
+        AdvancedEdit.Instance.SpriteBatch.End();
+        AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(null);
+    }
+
     public void DrawTile(Point position, byte value)
     {
         AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);

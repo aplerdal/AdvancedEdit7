@@ -8,8 +8,10 @@ using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Tools;
 
-public class Eyedropper : TilemapEditorTool
+public class Eyedropper : TilemapEditorTool, ISelectableTool
 {
+    public string Icon => "wand";
+    public ImGuiKey? Shortcut => ImGuiKey.V;
     
     public override void Update(TilemapEditor editor)
     {
@@ -20,7 +22,6 @@ public class Eyedropper : TilemapEditorTool
             if (!(hoveredTile.X >= 0 && hoveredTile.Y >= 0 && hoveredTile.X < track.Size.X && hoveredTile.Y < track.Size.Y))
                 return;
             editor.ActiveTile = track.Tilemap.Layout[hoveredTile.X, hoveredTile.Y];
-            editor.ActiveTool = new Draw();
         }
 
         var min = editor.View.TileToWindow(hoveredTile);

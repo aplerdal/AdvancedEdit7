@@ -40,8 +40,11 @@ public class DrawAction : IUndoable
     }
 }
 
-public class Draw : TilemapEditorTool
+public class Draw : TilemapEditorTool, ISelectableTool
 {
+    public string Icon => "pencil";
+    public ImGuiKey? Shortcut => ImGuiKey.P;
+    
     private DrawAction? _drawAction;
     
     public override void Update(TilemapEditor editor)

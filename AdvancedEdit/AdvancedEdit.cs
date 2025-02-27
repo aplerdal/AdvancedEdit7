@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Diagnostics;
 using System.Configuration;
@@ -24,6 +25,8 @@ public class AdvancedEdit : Game
     
     public GraphicsDeviceManager Graphics;
     public SpriteBatch SpriteBatch;
+
+    public Dictionary<string, IntPtr> Icons;
 
     public ImGuiRenderer ImGuiRenderer;
     public UiManager UiManager;
@@ -56,6 +59,16 @@ public class AdvancedEdit : Game
     protected override void LoadContent()
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
+
+        Icons = new Dictionary<string, IntPtr>
+        {
+            { "bucket", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("bucket_fill")) },
+            { "eraser", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("eraser")) },
+            { "pencil", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("pencil")) },
+            { "select", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("select")) },
+            { "wand", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("wand")) },
+        };
+        
 
         base.LoadContent();
     }

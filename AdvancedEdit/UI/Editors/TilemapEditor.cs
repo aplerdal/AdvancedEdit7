@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using AdvancedEdit.Serialization;
+using AdvancedEdit.UI.Components;
 using AdvancedEdit.UI.Tools;
 using AdvancedEdit.UI.Windows;
 using ImGuiNET;
@@ -16,7 +17,7 @@ public class TilemapEditor : TrackEditor
 {
     public override string Name => "Tilemap Editor";
     public override string Id => "tileeditor";
-    public TilemapEditorTool ActiveTool = new Draw();
+    private Toolbox _toolbox;
     private IntPtr _palettePtr;
     private Track _track;
 
@@ -25,6 +26,7 @@ public class TilemapEditor : TrackEditor
     public TilemapEditor(TrackView trackView) : base(trackView)
     {
         _track = trackView.Track;
+        _toolbox = new Toolbox([new Draw(), new Eyedropper(), new Bucket(), new RectFill()]);
         RegenAtlas();
     }
 
@@ -55,7 +57,7 @@ public class TilemapEditor : TrackEditor
     {
         if (hasFocus)
         {
-            ActiveTool.Update(this); 
+            _toolbox.ActiveTool.Update(this); 
         }
     }
 
@@ -143,13 +145,9 @@ public class TilemapEditor : TrackEditor
         }
         
         ImGui.SeparatorText("Tools");
-        if (ImGui.Button("Draw") || ImGui.IsKeyPressed(ImGuiKey.B)) {
-            ActiveTool = new Draw();
-        }
-        if (ImGui.Button("Eyedropper") || ImGui.IsKeyPressed(ImGuiKey.V)){
-            ActiveTool = new Eyedropper();
-        }
 
+        _toolbox.DrawToolbox();
+        
         ImGui.Separator();
     }
 
