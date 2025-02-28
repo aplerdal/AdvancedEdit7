@@ -67,7 +67,7 @@ public class RectFill : TilemapEditorTool, ISelectableTool
             var p1 = _start;
             var p2 = editor.View.HoveredTile;
             var min = new Point(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y));
-            var max = new Point(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y));
+            var max = new Point(Math.Max(p1.X, p2.X)+1, Math.Max(p1.Y, p2.Y)+1);
             ImGui.GetWindowDrawList().AddRect(editor.View.TileToWindow(min), editor.View.TileToWindow(max), Color.White.PackedValue, 0, 0, 3f);
         } else if (_dragging)
         {
@@ -75,7 +75,7 @@ public class RectFill : TilemapEditorTool, ISelectableTool
             var p1 = _start;
             var p2 = editor.View.HoveredTile;
             var min = new Point(Math.Min(p1.X, p2.X), Math.Min(p1.Y, p2.Y));
-            var max = new Point(Math.Max(p1.X, p2.X), Math.Max(p1.Y, p2.Y));
+            var max = new Point(Math.Max(p1.X, p2.X)+1, Math.Max(p1.Y, p2.Y)+1);
             var rect = new Rectangle(min, max - min);
             editor.UndoManager.Do(new RectAction(editor.View.Track, rect, editor.ActiveTile.Value));
         }
