@@ -3,14 +3,14 @@ using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Tools;
 
 public class Eyedropper : TilemapEditorTool, ISelectableTool
 {
-    public string Icon => "wand";
+    public string Icon => "eyedropper";
     public ImGuiKey? Shortcut => ImGuiKey.V;
     
     public override void Update(TilemapEditor editor)

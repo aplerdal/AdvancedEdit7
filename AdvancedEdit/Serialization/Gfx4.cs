@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Hexa.NET.ImGui;
 using Hjg.Pngcs;
 using Hjg.Pngcs.Chunks;
 using Microsoft.Xna.Framework.Graphics;
@@ -23,8 +24,8 @@ public class Gfx4{
         set{
             _activePalette = value;
             _cache = GenerateTexture();
-            if (_texturePtrCache is not null)
-                AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_texturePtrCache.Value, Texture);
+            if (_textureIDCache is not null)
+                AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_textureIDCache.Value, Texture);
         }
     }
     public Texture2D Texture {
@@ -34,16 +35,16 @@ public class Gfx4{
         }
     }
     protected Texture2D? _cache;
-    public IntPtr TexturePtr
+    public ImTextureID TexturePtr
     {
         get
         {
-            if (_texturePtrCache is null)
-                _texturePtrCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Texture);
-            return _texturePtrCache.Value;
+            if (_textureIDCache is null)
+                _textureIDCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Texture);
+            return _textureIDCache.Value;
         }
     }
-    protected IntPtr? _texturePtrCache;
+    protected ImTextureID? _textureIDCache;
 
     public Gfx4(byte[] data, Color[,] palettes){
         Palettes = palettes;
@@ -194,7 +195,7 @@ public class Gfx4{
         pngw.End();
     }
     ~Gfx4() {
-        if (_texturePtrCache is not null)
-            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache.Value);
+        if (_textureIDCache is not null)
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_textureIDCache.Value);
     }
 }

@@ -2,7 +2,7 @@ using System;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Undo;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Tools;
@@ -22,10 +22,10 @@ public class RectAction : IUndoable
             area.Right > track.Size.X || area.Bottom > track.Size.Y
             )
         {
-            var x = Math.Clamp(area.X, 0, track.Size.X);
-            var y = Math.Clamp(area.Y, 0, track.Size.Y);
-            var width = Math.Clamp(area.Right, 0, track.Size.X)-x;
-            var height = Math.Clamp(area.Bottom, 0, track.Size.Y)-y;
+            var x = Math.Clamp(area.X, 0, track.Size.X-1);
+            var y = Math.Clamp(area.Y, 0, track.Size.Y-1);
+            var width = Math.Clamp(area.Right, 0, track.Size.X-1)-x;
+            var height = Math.Clamp(area.Bottom, 0, track.Size.Y-1)-y;
             area = new Rectangle(x, y, width, height);
         }
         _area = area;
@@ -47,7 +47,7 @@ public class RectAction : IUndoable
 
 public class RectFill : TilemapEditorTool, ISelectableTool
 {
-    public string Icon => "select";
+    public string Icon => "rectangle";
     public ImGuiKey? Shortcut => ImGuiKey.R;
     
     private bool _dragging;

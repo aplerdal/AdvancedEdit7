@@ -5,7 +5,7 @@ using System.Linq;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 
 namespace AdvancedEdit.UI;
 

@@ -6,7 +6,7 @@ using System.Linq;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Tools;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using NativeFileDialogs.Net;
 
@@ -134,9 +134,9 @@ public class TrackView
 
         if (focused)
         {
-            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Z))
+            if (ImGui.Shortcut((int)(ImGuiKey.ModCtrl | ImGuiKey.Z)))
                 _editors[_activeEditor].UndoManager.Undo();
-            if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Y))
+            if (ImGui.Shortcut((int)(ImGuiKey.ModCtrl | ImGuiKey.Y)))
                 _editors[_activeEditor].UndoManager.Redo();
         }
         
@@ -159,6 +159,7 @@ public class TrackView
                     ImGui.EndTabItem();
                 }
             }
+            ImGui.EndTabBar();
         }
     }
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using Hexa.NET.ImGui;
 using Hjg.Pngcs;
 using Hjg.Pngcs.Chunks;
 using Microsoft.Xna.Framework.Graphics;
@@ -22,16 +23,15 @@ public class Gfx8{
     }
     protected Texture2D? _cache;
 
-    public IntPtr TexturePtr
+    public ImTextureID TexturePtr
     {
         get
         {
-            if (_texturePtrCache is null)
-                _texturePtrCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Texture);
-            return _texturePtrCache.Value;
+            _textureIDCache ??= AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Texture);
+            return _textureIDCache.Value;
         }
     }
-    protected IntPtr? _texturePtrCache;
+    protected ImTextureID? _textureIDCache;
     public Gfx8(byte[] data, Color[] palette){
         Palette = palette;
         Indices = data;
@@ -163,7 +163,7 @@ public class Gfx8{
     }
 
     ~Gfx8() {
-        if (_texturePtrCache is not null)
-            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache.Value);
+        if (_textureIDCache is not null)
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_textureIDCache.Value);
     }
 }

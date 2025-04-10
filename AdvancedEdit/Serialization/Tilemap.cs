@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -12,16 +13,15 @@ public class Tilemap
     public byte[,] Layout;
     public Texture2D Tileset;
 
-    public IntPtr TexturePtr
+    public ImTextureID TexturePtr
     {
         get
         {
-            if (_texturePtrCache == IntPtr.Zero)
-                _texturePtrCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(TrackTexture);
-            return _texturePtrCache;
+            _textureIDCache ??= AdvancedEdit.Instance.ImGuiRenderer.BindTexture(TrackTexture);
+            return _textureIDCache.Value;
         }
     }
-    private IntPtr _texturePtrCache = IntPtr.Zero;
+    private ImTextureID? _textureIDCache = null;
 
     public Tilemap(Point trackSize, Texture2D tileset, byte[] indices)
     {
@@ -55,7 +55,7 @@ public class Tilemap
         if (TrackTexture.Width != Layout.GetLength(0) || TrackTexture.Height != Layout.GetLength(1))
         {
             TrackTexture = new RenderTarget2D(AdvancedEdit.Instance.GraphicsDevice, Layout.GetLength(0) * 8, Layout.GetLength(1) * 8, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
-            AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_texturePtrCache, TrackTexture);
+            AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(TexturePtr, TrackTexture);
         }
         AdvancedEdit.Instance.GraphicsDevice.SetRenderTarget(TrackTexture);
         AdvancedEdit.Instance.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend,
@@ -150,7 +150,7 @@ public class Tilemap
 
     ~Tilemap()
     {
-        if (_texturePtrCache != IntPtr.Zero)
-            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_texturePtrCache);
+        if (_textureIDCache is not null)
+            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_textureIDCache.Value);
     }
 }

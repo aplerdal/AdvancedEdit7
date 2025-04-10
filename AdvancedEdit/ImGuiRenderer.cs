@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -54,10 +54,10 @@ public class ImGuiRenderer
         private int _indexBufferSize;
 
         // Textures
-        private Dictionary<IntPtr, Texture2D> _loadedTextures { get; set; }
+        private Dictionary<ImTextureID, Texture2D> _loadedTextures { get; set; }
 
         private int _textureId;
-        private IntPtr? _fontTextureId;
+        private ImTextureID? _fontTextureId;
 
         // Input
         private int _scrollWheelValue;
@@ -73,7 +73,7 @@ public class ImGuiRenderer
             _game = game ?? throw new ArgumentNullException(nameof(game));
             _graphicsDevice = game.GraphicsDevice;
 
-            _loadedTextures = new Dictionary<IntPtr, Texture2D>();
+            _loadedTextures = new Dictionary<ImTextureID, Texture2D>();
 
             _rasterizerState = new RasterizerState()
             {
@@ -97,7 +97,11 @@ public class ImGuiRenderer
         {
             // Get font texture from ImGui
             var io = ImGui.GetIO();
-            io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bytesPerPixel);
+            byte* pixelData = (byte*)IntPtr.Zero;
+            int width = 0;
+            int height = 0;
+            int bytesPerPixel = 0;
+            io.Fonts.GetTexDataAsRGBA32(ref pixelData, ref width, ref height, ref bytesPerPixel);
 
             // Copy the data to a managed array
             var pixels = new byte[width * height * bytesPerPixel];
@@ -121,9 +125,9 @@ public class ImGuiRenderer
         /// <summary>
         /// Creates a pointer to a texture, which can be passed through ImGui calls such as <see cref="ImGui.Image" />. That pointer is then used by ImGui to let us know what texture to draw
         /// </summary>
-        public IntPtr BindTexture(Texture2D texture)
+        public ImTextureID BindTexture(Texture2D texture)
         {
-            var id = new IntPtr(_textureId++);
+            var id = new ImTextureID(_textureId++);
 
             _loadedTextures.Add(id, texture);
 
@@ -133,18 +137,18 @@ public class ImGuiRenderer
         /// <summary>
         /// Removes a previously created texture pointer, releasing its reference and allowing it to be deallocated
         /// </summary>
-        public void UnbindTexture(IntPtr textureId)
+        public void UnbindTexture(ImTextureID textureId)
         {
-            Debug.Assert(textureId != 0); // Don't remove font texture
+            Debug.Assert(textureId.Handle != 0); // Don't remove font texture
             _loadedTextures.Remove(textureId);
         }
 
         /// <summary>
         /// Updates an existing texture pointer to a new texture.
         /// </summary>
-        public void UpdateTexture(IntPtr textureId, Texture2D texture)
+        public void UpdateTexture(ImTextureID textureId, Texture2D texture)
         {
-            Debug.Assert(textureId != 0); // Don't override font texture
+            Debug.Assert(textureId.Handle != 0); // Don't override font texture
             _loadedTextures[textureId] = texture;
         }
 
@@ -285,7 +289,7 @@ public class ImGuiRenderer
                 Keys.PrintScreen => ImGuiKey.PrintScreen,
                 Keys.Insert => ImGuiKey.Insert,
                 Keys.Delete => ImGuiKey.Delete,
-                >= Keys.D0 and <= Keys.D9 => ImGuiKey._0 + (key - Keys.D0),
+                >= Keys.D0 and <= Keys.D9 => ImGuiKey.Key0+ (key - Keys.D0),
                 >= Keys.A and <= Keys.Z => ImGuiKey.A + (key - Keys.A),
                 >= Keys.NumPad0 and <= Keys.NumPad9 => ImGuiKey.Keypad0 + (key - Keys.NumPad0),
                 Keys.Multiply => ImGuiKey.KeypadMultiply,
@@ -423,7 +427,7 @@ public class ImGuiRenderer
 
                 for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
                 {
-                    ImDrawCmdPtr drawCmd = cmdList.CmdBuffer[cmdi];
+                    ImDrawCmd drawCmd = cmdList.CmdBuffer[cmdi];
 
                     if (drawCmd.ElemCount == 0) 
                     {

@@ -1,6 +1,6 @@
 using System;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework.Input;
 using Microsoft.Xna.Framework;
 
@@ -55,7 +55,7 @@ public class View : MapTool
 
         #region Kb input
 
-        if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Equal))
+        if (ImGui.Shortcut((int)(ImGuiKey.ModCtrl | ImGuiKey.Equal)))
         {
             Vector2 center = ImGui.GetWindowPos()+ImGui.GetWindowSize()/2 - trackView.MapPosition;
             trackView.Scale *= ZoomFactor;
@@ -64,7 +64,7 @@ public class View : MapTool
             trackView.Translation += center - center * (pixelTrackSize / trackView.MapSize);
         }
 
-        if (ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.Minus))
+        if (ImGui.Shortcut((int)(ImGuiKey.ModCtrl | ImGuiKey.Minus)))
         {
             Vector2 center = ImGui.GetWindowPos() + ImGui.GetWindowSize() / 2 - trackView.MapPosition;
             trackView.Scale /= ZoomFactor;

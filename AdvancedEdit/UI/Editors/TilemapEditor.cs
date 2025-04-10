@@ -5,7 +5,7 @@ using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Components;
 using AdvancedEdit.UI.Tools;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using NativeFileDialogs.Net;
@@ -18,15 +18,17 @@ public class TilemapEditor : TrackEditor
     public override string Name => "Tilemap Editor";
     public override string Id => "tileeditor";
     private Toolbox _toolbox;
-    private IntPtr _palettePtr;
+    public SelectionManager SelectionManager;
+    private ImTextureID _palettePtr;
     private Track _track;
 
     public byte? ActiveTile = null;
 
     public TilemapEditor(TrackView trackView) : base(trackView)
     {
+        SelectionManager = new SelectionManager();
         _track = trackView.Track;
-        _toolbox = new Toolbox([new Draw(), new Eyedropper(), new Bucket(), new RectFill()]);
+        _toolbox = new Toolbox([new Draw(), new Eyedropper(), new Bucket(), new RectFill(), new TileSelect()]);
         RegenAtlas();
     }
 
@@ -59,6 +61,8 @@ public class TilemapEditor : TrackEditor
         {
             _toolbox.ActiveTool.Update(this); 
         }
+
+        SelectionManager.Update(View);
     }
 
     public override void DrawInspector()

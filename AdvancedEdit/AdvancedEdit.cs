@@ -5,9 +5,10 @@ using System.Diagnostics;
 using System.Configuration;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI;
+using AdvancedEdit.UI.Theme;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -26,11 +27,14 @@ public class AdvancedEdit : Game
     public GraphicsDeviceManager Graphics;
     public SpriteBatch SpriteBatch;
 
-    public Dictionary<string, IntPtr> Icons;
+    public Dictionary<string, ImTextureID> Icons;
 
     public ImGuiRenderer ImGuiRenderer;
     public UiManager UiManager;
     public TrackManager? TrackManager;
+    public Theme Theme = new DarkTheme();
+
+    public GameTime GameTime;
 
     #pragma warning disable CS8618
     public AdvancedEdit()
@@ -48,10 +52,14 @@ public class AdvancedEdit : Game
     protected override void Initialize()
     {
         ImGuiRenderer = new ImGuiRenderer(this);
+        var io = ImGui.GetIO();
+        io.Fonts.AddFontFromFileTTF(Path.Combine("Content", "OpenSans-Regular.ttf"), 18);
         ImGuiRenderer.RebuildFontAtlas();
+        Theme.UpdateStyle();
+        
         UiManager = new UiManager();
         
-        ImGui.GetIO().ConfigFlags |= ImGuiConfigFlags.DockingEnable;
+        io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
         base.Initialize();
     }
@@ -60,13 +68,16 @@ public class AdvancedEdit : Game
     {
         SpriteBatch = new SpriteBatch(GraphicsDevice);
 
-        Icons = new Dictionary<string, IntPtr>
+        Icons = new Dictionary<string, ImTextureID>
         {
             { "bucket", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("bucket_fill")) },
             { "eraser", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("eraser")) },
             { "pencil", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("pencil")) },
             { "select", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("select")) },
             { "wand", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("wand")) },
+            { "eyedropper", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("picker")) },
+            { "rectangle", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("rectangle")) },
+            { "move", ImGuiRenderer.BindTexture(Content.Load<Texture2D>("move")) },
         };
         
 
@@ -80,6 +91,7 @@ public class AdvancedEdit : Game
 
     protected override void Draw(GameTime gameTime)
     {
+        GameTime = gameTime;
         GraphicsDevice.Clear(Color.CornflowerBlue);
         ImGuiRenderer.BeforeLayout(gameTime);
 

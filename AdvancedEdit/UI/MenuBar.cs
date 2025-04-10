@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using NativeFileDialogs.Net;
 
 namespace AdvancedEdit.UI;

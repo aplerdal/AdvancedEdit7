@@ -41,7 +41,7 @@ public enum HoverPart
     Target,
 }
 
-public class AiSector : IEquatable<AiSector>
+public class AiSector : IEquatable<AiSector>, ICloneable
 {
     #region Properties
     /// <summary>
@@ -183,11 +183,11 @@ public class AiSector : IEquatable<AiSector>
 
     public AiSector(AiSector oldSector)
     {
-        Targets = oldSector.Targets;
         _zone = oldSector.Zone;
-        Speeds = oldSector.Speeds;
         _shape = oldSector.Shape;
-        Intersections = oldSector.Intersections;
+        Targets = (Point[])oldSector.Targets.Clone();
+        Speeds = (int[])oldSector.Speeds.Clone();
+        Intersections = (bool[])oldSector.Intersections.Clone();
     } 
 
     public HoverPart GetHover(Point point, int targetSet)
@@ -959,6 +959,11 @@ public class AiSector : IEquatable<AiSector>
     public override int GetHashCode()
     {
         return HashCode.Combine((int)_shape, _zone, Targets, Speeds, Intersections);
+    }
+
+    public object Clone()
+    {
+        return new AiSector(this);
     }
 
     public void GetRawInputs(out Point[] targets, out ZoneShape shape, out Rectangle zone, out int[] speeds, out bool[] intersections)

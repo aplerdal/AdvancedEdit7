@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using AdvancedEdit.UI.Tools;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Vector2 = System.Numerics.Vector2;
 
@@ -21,7 +21,7 @@ public class Toolbox(Tool[] tools)
                 if (i%4!=0) ImGui.SameLine();
                 
                 if (ImGui.ImageButton($"tool{i}", AdvancedEdit.Instance.Icons[tool.Icon], new Vector2(16, 16))
-                    || (tool.Shortcut is not null && ImGui.IsKeyChordPressed(tool.Shortcut.Value))
+                    || (tool.Shortcut is not null && ImGui.Shortcut((int)tool.Shortcut.Value))
                     )
                 {
                     _activeTool = i;
@@ -31,7 +31,7 @@ public class Toolbox(Tool[] tools)
                 {
                     var min = ImGui.GetItemRectMin();
                     var max = ImGui.GetItemRectMax();
-                    ImGui.GetWindowDrawList().AddRect(min, max, Color.White.PackedValue, 0, ImDrawFlags.None, 3);
+                    ImGui.GetWindowDrawList().AddRect(min, max, Color.White.PackedValue, 6.0f, ImDrawFlags.None, 3);
                 }
             }
         }

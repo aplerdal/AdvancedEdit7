@@ -4,7 +4,7 @@ using System.Linq;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
 
@@ -23,14 +23,14 @@ public struct AiDrag : IUndoable
     public AiDrag(List<AiSector> sectors, int sectorNumber)
     {
         _sectors = sectors;
-        Original = new(sectors[sectorNumber]);
+        Original = (AiSector)sectors[sectorNumber].Clone();
         SectorNumber = sectorNumber;
     }
 
 
     public void Do()
     {
-        _new ??= new(_sectors[SectorNumber]);
+        _new ??= (AiSector)_sectors[SectorNumber].Clone();
         _sectors[SectorNumber] = _new;
     }
 
@@ -221,8 +221,8 @@ public class AiEditor(TrackView trackView) : TrackEditor(trackView)
             View.Track.AiSectors.Add(new AiSector(new Point(64,64)));
         }
         ImGui.SameLine();
-        if ((ImGui.Button("Duplicate Sector") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D)) && _selectedSector != -1){
-            var sector = new AiSector(View.Track.AiSectors[_selectedSector]);
+        if ((ImGui.Button("Duplicate Sector") || ImGui.Shortcut((int)(ImGuiKey.ModCtrl | ImGuiKey.D))) && _selectedSector != -1){
+            var sector = (AiSector)View.Track.AiSectors[_selectedSector].Clone();
             sector.Position += new Point(2);
             sector.Targets[_activeSet] += new Point(2);
             View.Track.AiSectors.Add(sector);

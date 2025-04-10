@@ -1,7 +1,7 @@
 using System;
 using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 
 namespace AdvancedEdit.UI.Tools;
 

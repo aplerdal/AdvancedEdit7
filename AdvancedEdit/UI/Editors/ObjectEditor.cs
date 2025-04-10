@@ -3,7 +3,7 @@ using System.Security.AccessControl;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Undo;
 using AdvancedEdit.UI.Windows;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Editors;
@@ -226,7 +226,7 @@ public class ObjectEditor(TrackView trackView) : TrackEditor(trackView)
         {
             var selection = _selection.Value;
             GameObject obj = selection.List[selection.Index];
-            if (ImGui.Button("Duplicate Object") || ImGui.IsKeyChordPressed(ImGuiKey.ModCtrl | ImGuiKey.D))
+            if (ImGui.Button("Duplicate Object") || ImGui.Shortcut((int)(ImGuiKey.ModCtrl | ImGuiKey.D)))
             {
                 var gameobj = (GameObject)obj.Clone();
                 gameobj.Position += new Point(2);

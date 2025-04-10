@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using AdvancedEdit.Serialization;
 using AdvancedEdit.UI.Editors;
 using AdvancedEdit.UI.Undo;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 
 namespace AdvancedEdit.UI.Tools;
 
-public class FillAction(Track track, HashSet<Point> positions, byte newTile, byte oldTile) : IUndoable
+public class TileFillAction(Track track, HashSet<Point> positions, byte newTile, byte oldTile) : IUndoable
 {
     public void Do()
     {
@@ -17,6 +17,28 @@ public class FillAction(Track track, HashSet<Point> positions, byte newTile, byt
     public void Undo()
     {
         track.Tilemap.SetTiles(positions, oldTile);
+    }
+}
+
+public class SelectionFillAction(Track track, HashSet<Point> positions, byte newTile) : IUndoable
+{
+    private Dictionary<Point, byte>? _oldTiles;
+    public void Do()
+    {
+        if (_oldTiles is null)
+        {
+            _oldTiles = new Dictionary<Point, byte>();
+            foreach (var point in positions)
+            {
+                _oldTiles.Add(point, track.Tilemap.Layout[point.X, point.Y]);
+            }
+        }
+        track.Tilemap.SetTiles(positions, newTile);
+    }
+
+    public void Undo()
+    {
+        track.Tilemap.SetTiles(_oldTiles!);
     }
 }
 public class Bucket : TilemapEditorTool, ISelectableTool
@@ -32,16 +54,26 @@ public class Bucket : TilemapEditorTool, ISelectableTool
             if (!(hoveredTile.X >= 0 && hoveredTile.Y >= 0 && hoveredTile.X < track.Size.X &&
                   hoveredTile.Y < track.Size.Y))
                 return;
-            var action = FastFloodFill(editor, hoveredTile, editor.ActiveTile.Value);
-            if (action is not null)
-                editor.UndoManager.Do(action);
+            if (editor.SelectionManager.HasPoint(editor.View.HoveredTile))
+            {
+                // Fill selection
+                editor.UndoManager.Do(new SelectionFillAction(editor.View.Track, editor.SelectionManager.Selection, editor.ActiveTile.Value));
+                
+            }
+            else
+            {
+                // Flood fill
+                var action = FastFloodFill(editor, hoveredTile, editor.ActiveTile.Value);
+                if (action is not null)
+                    editor.UndoManager.Do(action);
+            }
         }
 
         var min = editor.View.TileToWindow(hoveredTile);
         var max = editor.View.TileToWindow(hoveredTile + new Point(1));
         ImGui.GetWindowDrawList().AddRect(min, max, Color.WhiteSmoke.PackedValue, 0, 0, 2.0f);
     }
-    private static FillAction? FastFloodFill(TilemapEditor editor, Point pos, byte replacement)
+    private static TileFillAction? FastFloodFill(TilemapEditor editor, Point pos, byte replacement)
     {
         var map = editor.View.Track.Tilemap.Layout;
         int width = map.GetLength(0);
@@ -103,7 +135,7 @@ public class Bucket : TilemapEditorTool, ISelectableTool
             TryPushRow(left + 1, y + 1); // Check row below
         }
 
-        return new FillAction(editor.View.Track, changedPoints, replacement, target);
+        return new TileFillAction(editor.View.Track, changedPoints, replacement, target);
         
     }
 
