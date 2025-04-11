@@ -7,7 +7,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 
-namespace AdvancedEdit;
+namespace AdvancedEdit.UI.Renderer;
 
 public static class DrawVertDeclaration
 {
@@ -167,7 +167,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Asks ImGui for the generated geometry data and sends it to the graphics pipeline, should be called after the UI is drawn using ImGui.** calls
         /// </summary>
-        public virtual void AfterLayout()
+        public void AfterLayout()
         {
             ImGui.Render();
 
@@ -181,7 +181,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Setup key input event handler.
         /// </summary>
-        protected virtual void SetupInput()
+        protected void SetupInput()
         {
             var io = ImGui.GetIO();
 
@@ -207,7 +207,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Updates the <see cref="Effect" /> to the current matrices and texture
         /// </summary>
-        protected virtual Effect UpdateEffect(Texture2D texture)
+        protected Effect UpdateEffect(Texture2D texture)
         {
             _effect = _effect ?? new BasicEffect(_graphicsDevice);
 
@@ -226,7 +226,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Sends XNA input state to ImGui
         /// </summary>
-        protected virtual void UpdateInput()
+        protected void UpdateInput()
         {
             if (!_game.IsActive) return;
             

@@ -4,10 +4,7 @@ using System.IO;
 using System.Diagnostics;
 using System.Configuration;
 using AdvancedEdit.Serialization;
-using AdvancedEdit.UI;
-using AdvancedEdit.UI.Theme;
-using AdvancedEdit.UI.Undo;
-using AdvancedEdit.UI.Windows;
+using AdvancedEdit.UI.Renderer;
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -30,9 +27,7 @@ public class AdvancedEdit : Game
     public Dictionary<string, ImTextureID> Icons;
 
     public ImGuiRenderer ImGuiRenderer;
-    public UiManager UiManager;
     public TrackManager? TrackManager;
-    public Theme Theme = new DarkTheme();
 
     public GameTime GameTime;
 
@@ -55,9 +50,9 @@ public class AdvancedEdit : Game
         var io = ImGui.GetIO();
         io.Fonts.AddFontFromFileTTF(Path.Combine("Content", "OpenSans-Regular.ttf"), 18);
         ImGuiRenderer.RebuildFontAtlas();
-        Theme.UpdateStyle();
+        //Theme.UpdateStyle();
         
-        UiManager = new UiManager();
+        //UiManager = new UiManager();
         
         io.ConfigFlags |= ImGuiConfigFlags.DockingEnable;
 
@@ -94,8 +89,6 @@ public class AdvancedEdit : Game
         GameTime = gameTime;
         GraphicsDevice.Clear(Color.CornflowerBlue);
         ImGuiRenderer.BeforeLayout(gameTime);
-
-        UiManager.DrawWindows();
         
         ImGuiRenderer.AfterLayout();
         
