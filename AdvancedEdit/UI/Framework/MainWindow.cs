@@ -10,20 +10,12 @@ namespace AdvancedEdit.UI.Framework;
 
 public class MainWindow : DockSpaceWindow
 {
-    /// <summary>
-    /// Windows attached to the main window.
-    /// </summary>
     public List<Window> Windows = new List<Window>();
-
-    /// <summary>
-    /// The menu items on the top of the main window.
-    /// </summary>
     public List<MenuItem> MenuItems = new List<MenuItem>();
 
     public static bool ForceFocus = true;
 
-    //General window info
-    protected static GameWindow _window;
+    protected static Game _game;
     float font_scale = 1.0f;
     bool fullscreen = true;
     bool p_open = true;
@@ -33,9 +25,9 @@ public class MainWindow : DockSpaceWindow
     {
     }
 
-    internal void Init(GameWindow window)
+    internal void Init(Game game)
     {
-        _window = window;
+        _game = game;
     }
 
     public void OnApplicationLoad()

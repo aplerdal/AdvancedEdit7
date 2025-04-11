@@ -155,7 +155,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Sets up ImGui for a new frame, should be called at frame start
         /// </summary>
-        public void BeforeLayout(GameTime gameTime)
+        public void Update(GameTime gameTime)
         {
             ImGui.GetIO().DeltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -167,7 +167,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Asks ImGui for the generated geometry data and sends it to the graphics pipeline, should be called after the UI is drawn using ImGui.** calls
         /// </summary>
-        public void AfterLayout()
+        public void Render()
         {
             ImGui.Render();
 
