@@ -155,7 +155,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Sets up ImGui for a new frame, should be called at frame start
         /// </summary>
-        public void Update(GameTime gameTime)
+        public void BeforeLayout(GameTime gameTime)
         {
             ImGui.GetIO().DeltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
@@ -167,7 +167,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Asks ImGui for the generated geometry data and sends it to the graphics pipeline, should be called after the UI is drawn using ImGui.** calls
         /// </summary>
-        public void Render()
+        public virtual void AfterLayout()
         {
             ImGui.Render();
 
@@ -181,7 +181,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Setup key input event handler.
         /// </summary>
-        protected void SetupInput()
+        protected virtual void SetupInput()
         {
             var io = ImGui.GetIO();
 
@@ -207,7 +207,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Updates the <see cref="Effect" /> to the current matrices and texture
         /// </summary>
-        protected Effect UpdateEffect(Texture2D texture)
+        protected virtual Effect UpdateEffect(Texture2D texture)
         {
             _effect = _effect ?? new BasicEffect(_graphicsDevice);
 
@@ -226,7 +226,7 @@ public class ImGuiRenderer
         /// <summary>
         /// Sends XNA input state to ImGui
         /// </summary>
-        protected void UpdateInput()
+        protected virtual void UpdateInput()
         {
             if (!_game.IsActive) return;
             

@@ -1,6 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.IO;
+using AdvancedEdit.UI.Framework;
+using AdvancedEdit.UI.Renderer;
 using Hexa.NET.ImGui;
 using Hjg.Pngcs;
 using Hjg.Pngcs.Chunks;
@@ -25,7 +27,7 @@ public class Gfx4{
             _activePalette = value;
             _cache = GenerateTexture();
             if (_textureIDCache is not null)
-                AdvancedEdit.Instance.ImGuiRenderer.UpdateTexture(_textureIDCache.Value, Texture);
+                ImGuiApp.Instance.ImGuiRenderer.UpdateTexture(_textureIDCache.Value, Texture);
         }
     }
     public Texture2D Texture {
@@ -40,7 +42,7 @@ public class Gfx4{
         get
         {
             if (_textureIDCache is null)
-                _textureIDCache = AdvancedEdit.Instance.ImGuiRenderer.BindTexture(Texture);
+                _textureIDCache = ImGuiApp.Instance.ImGuiRenderer.BindTexture(Texture);
             return _textureIDCache.Value;
         }
     }
@@ -63,7 +65,7 @@ public class Gfx4{
     }
     public Texture2D GenerateTexture(){
         var tileCount = Indices.Length / 64;
-        var tempTexture = new Texture2D(AdvancedEdit.Instance.GraphicsDevice, tileCount * 8, 8, false,
+        var tempTexture = new Texture2D(ImGuiApp.Instance.GraphicsDevice, tileCount * 8, 8, false,
             SurfaceFormat.Color);
         Color[] colors = new Color[tileCount * 64];
         for (int tile = 0; tile < tileCount; tile++)
@@ -196,6 +198,6 @@ public class Gfx4{
     }
     ~Gfx4() {
         if (_textureIDCache is not null)
-            AdvancedEdit.Instance.ImGuiRenderer.UnbindTexture(_textureIDCache.Value);
+            ImGuiApp.Instance.ImGuiRenderer.UnbindTexture(_textureIDCache.Value);
     }
 }

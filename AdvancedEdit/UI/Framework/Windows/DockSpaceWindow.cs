@@ -105,7 +105,7 @@ public class DockSpaceWindow : Window, IDisposable
 
         unsafe
         {
-            uint windowId = ImGui.GetID($"###window_{this.Name}");
+            uint windowId = ImGuiP.ImHashStr($"###window_{this.Name}");
 
             WindowClass = (ImGuiWindowClass*)Marshal.AllocHGlobal(sizeof(ImGuiWindowClass));
             ImGuiWindowClass windowClass = new ImGuiWindowClass();

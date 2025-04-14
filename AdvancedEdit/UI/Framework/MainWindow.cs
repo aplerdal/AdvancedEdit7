@@ -2,9 +2,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using AdvancedEdit.UI.Framework.Windows;
 using AdvancedEdit.UI.Framework.Menu;
+using AdvancedEdit.UI.Renderer;
 using AdvancedEdit.UI.Themes;
 using Hexa.NET.ImGui;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Input;
 
 namespace AdvancedEdit.UI.Framework;
 
@@ -45,7 +47,6 @@ public class MainWindow : DockSpaceWindow
         //Load theme files
         ThemeManager.Load();
         ThemeManager.UpdateTheme(new LightTheme());
-
         OnLoad();
     }
 
@@ -114,19 +115,15 @@ public class MainWindow : DockSpaceWindow
     {
     }
 
-    public virtual void OnFileDrop(string fileName)
+    public virtual void OnFileDrop(string filename)
     {
     }
 
-    public virtual void OnKeyDown(ImGuiKey key)
+    public virtual void OnKeyDown(Keys key)
     {
     }
 
-    public virtual void OnFocusedChanged()
-    {
-    }
-
-    public virtual void OnClosing(CancelEventArgs e)
+    public virtual void OnClosing(object? sender, ExitingEventArgs? e)
     {
     }
 }
